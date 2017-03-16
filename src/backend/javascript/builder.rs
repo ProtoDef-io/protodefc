@@ -15,6 +15,10 @@ impl Block {
         self.0.push(Statement::Assign { variant: AssignVariant::Var,
                                         name: name, expr: expr, });
     }
+    pub fn let_assign(&mut self, name: String, expr: Expr) {
+        self.0.push(Statement::Assign { variant: AssignVariant::Let,
+                                        name: name, expr: expr, });
+    }
 
     pub fn if_(&mut self, cond: Expr, block: Block) {
         self.0.push(Statement::If { conds: vec![(cond, block)],
@@ -23,6 +27,26 @@ impl Block {
 
     pub fn expr(&mut self, expr: Expr) {
         self.0.push(Statement::Expr { expr: expr, });
+    }
+
+    pub fn decl_fun(&mut self, name: String, args: Vec<String>, block: Block) {
+        self.0.push(Statement::FunctionDeclaration {
+            name: name,
+            args: args,
+            block: block,
+        });
+    }
+
+    pub fn scope(&mut self, block: Block) {
+        self.0.push(Statement::Scope { block: block });
+    }
+
+    pub fn block(&mut self, block: Block) {
+        self.0.push(Statement::Block { block: block });
+    }
+
+    pub fn return_(&mut self, expr: Expr) {
+        self.0.push(Statement::Return { expr: expr });
     }
 
 }
@@ -79,7 +103,7 @@ pub enum Statement {
     Return {
         expr: Expr,
     },
-    FunctionDecl {
+    FunctionDeclaration {
         name: String,
         args: Vec<String>,
         block: Block,
@@ -87,14 +111,21 @@ pub enum Statement {
     Expr {
         expr: Expr,
     },
+    Scope {
+        block: Block,
+    },
+    Block {
+        block: Block,
+    },
 }
 
 impl ToJavascript for Statement {
     fn to_javascript(&self, out: &mut String, level: u64) {
-        pad_level(out, level);
 
         match *self {
             Statement::Assign { ref variant, ref name, ref expr } => {
+                pad_level(out, level);
+
                 variant.append(out);
                 out.push_str(name);
                 out.push_str(" = ");
@@ -103,6 +134,8 @@ impl ToJavascript for Statement {
             }
             Statement::If { ref conds, ref else_ } => {
                 assert!(conds.len() >= 1);
+
+                pad_level(out, level);
 
                 let mut first = true;
                 for &(ref cond, ref block) in conds {
@@ -126,31 +159,71 @@ impl ToJavascript for Statement {
                 if let &Some(ref block) = else_ {
                     out.push_str(" else {\n");
                     block.to_javascript(out, level+1);
+
+                    pad_level(out, level);
                     out.push_str("}");
                 }
 
                 out.push_str("\n");
             }
+            Statement::FunctionDeclaration { ref name, ref args, ref block } => {
+                pad_level(out, level);
+
+                out.push_str("function ");
+                out.push_str(name);
+                out.push_str("(");
+                if args.len() > 0 {
+                    for num in 0..args.len()-1 {
+                        out.push_str(&args[num]);
+                        out.push_str(", ");
+                    }
+                    out.push_str(args.last().unwrap());
+                }
+                out.push_str(") {\n");
+                block.to_javascript(out, level+1);
+
+                pad_level(out, level);
+                out.push_str("}\n");
+            }
             Statement::Expr { ref expr } => {
+                pad_level(out, level);
+
                 out.push_str(&expr.0);
                 out.push_str(";\n");
             }
-            _ => {}
+            Statement::Scope { ref block } => {
+                pad_level(out, level);
+
+                out.push_str("{\n");
+                block.to_javascript(out, level+1);
+                pad_level(out, level);
+                out.push_str("}\n");
+            }
+            Statement::Block { ref block } => {
+                block.to_javascript(out, level);
+            }
+            Statement::Return { ref expr } => {
+                pad_level(out, level);
+                out.push_str("return ");
+                out.push_str(&expr.0);
+                out.push_str(";\n");
+            }
+            //_ => unimplemented!(),
         }
     }
 }
 
 fn pad_level(string: &mut String, level: u64) {
-    for i in 0..level {
+    for _ in 0..level {
         string.push_str("    ");
     }
 }
 
-trait ToJavascript {
+pub trait ToJavascript {
     fn to_javascript(&self, out: &mut String, level: u64);
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "js_tests"))]
 mod tests {
 
     use super::Block;

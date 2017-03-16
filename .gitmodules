@@ -1,0 +1,3 @@
+[submodule "protodef_spec"]
+	path = protodef_spec
+	url = https://github.com/ProtoDef-io/ProtoDef.git

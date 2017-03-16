@@ -1,14 +1,18 @@
 use ::{Type, TypeData, TypeContainer};
-use ::variants::{SimpleScalarVariant, ContainerVariant, ContainerField, ReferencedArrayVariant,
-                 PrefixedArrayVariant, FixedArrayVariant, SwitchVariant, SwitchCase};
+use ::variants::{Variant, SimpleScalarVariant, ContainerVariant, ContainerField, SwitchVariant,
+                 SwitchCase, PrefixedStringVariant};
 use ::field_reference::FieldReference;
 use super::FromProtocolJson;
-use super::json::JsonValue;
+use ::json::JsonValue;
 use super::errors::*;
 use super::type_from_json;
+use super::count::{CountMode, read_count};
 
 use std::rc::Rc;
 use std::cell::RefCell;
+
+mod array;
+pub use self::array::ArrayReader;
 
 pub struct ScalarReader;
 impl FromProtocolJson for ScalarReader {
@@ -18,7 +22,7 @@ impl FromProtocolJson for ScalarReader {
 
         Ok(Rc::new(RefCell::new(Type {
             data: data,
-            variant: Box::new(SimpleScalarVariant {}),
+            variant: Variant::SimpleScalar(SimpleScalarVariant {}),
         })))
     }
 }
@@ -66,99 +70,9 @@ impl FromProtocolJson for ContainerReader {
 
         Ok(Rc::new(RefCell::new(Type {
             data: data,
-            variant: Box::new(ContainerVariant { fields: fields }),
+            variant: Variant::Container(ContainerVariant { fields: fields }),
         })))
     }
-}
-
-pub struct ArrayReader;
-impl FromProtocolJson for ArrayReader {
-    fn from_json(name: String, arg: &JsonValue) -> Result<TypeContainer> {
-        ensure!(arg.is_object(),
-                "argument for 'array' must be object, got {:?}",
-                arg);
-        ensure!(arg.has_key("type"),
-                "argument for 'array' must have a 'type' key");
-
-        let has_count = arg.has_key("count");
-        let has_count_type = arg.has_key("countType");
-
-        ensure!(!(has_count && has_count_type),
-                "argument for 'array' must have only one of 'count' and 'countType'");
-
-        let child_type = type_from_json(arg).chain_err(|| "inside 'type' of 'array'")?;
-
-        if has_count_type {
-            make_prefixed_array(name, child_type, &arg["countType"])
-        } else {
-            let count_arg = &arg["count"];
-            if let Some(count) = count_arg.as_u64() {
-                make_fixed_array(name, child_type, count as usize)
-            } else if let Some(path) = count_arg.as_str() {
-                make_referenced_array(name, child_type, path)
-            } else {
-                bail!("'count' argument for 'array' must be either a path or a number");
-            }
-        }
-    }
-}
-
-fn make_prefixed_array(name: String,
-                       child: TypeContainer,
-                       prefix_type_raw: &JsonValue)
-                       -> Result<TypeContainer> {
-    let prefix_type = type_from_json(prefix_type_raw).chain_err(|| "inside 'countType of 'array'")?;
-
-    let mut data = TypeData::default();
-    data.name = name;
-    data.children.push(prefix_type.clone());
-    data.children.push(child.clone());
-
-    Ok(Rc::new(RefCell::new(Type {
-        variant: Box::new(PrefixedArrayVariant {
-            count: Rc::downgrade(&prefix_type),
-            count_index: 0,
-
-            child: Rc::downgrade(&child),
-            child_index: 1,
-        }),
-        data: data,
-    })))
-}
-
-fn make_referenced_array(name: String, child: TypeContainer, path: &str) -> Result<TypeContainer> {
-    let path = FieldReference::parse(path)
-        .ok_or("'count' field in 'array must contain a valid field reference")?;
-
-    let mut data = TypeData::default();
-    data.name = name;
-    data.children.push(child.clone());
-
-    Ok(Rc::new(RefCell::new(Type {
-        variant: Box::new(ReferencedArrayVariant {
-            count: None,
-            count_path: path,
-
-            child: Rc::downgrade(&child),
-            child_index: 0,
-        }),
-        data: data,
-    })))
-}
-
-fn make_fixed_array(name: String, child: TypeContainer, count: usize) -> Result<TypeContainer> {
-    let mut data = TypeData::default();
-    data.name = name;
-    data.children.push(child.clone());
-
-    Ok(Rc::new(RefCell::new(Type {
-        variant: Box::new(FixedArrayVariant  {
-            count: count,
-            child: Rc::downgrade(&child),
-            child_index: 0,
-        }),
-        data: data,
-    })))
 }
 
 pub struct SwitchReader;
@@ -181,8 +95,7 @@ impl FromProtocolJson for SwitchReader {
 
         let fields_key = &arg["fields"];
 
-        let mut children_options: Vec<(TypeContainer, SwitchCase)> =
-            fields_key.entries()
+        let mut children_options: Vec<(TypeContainer, SwitchCase)> = fields_key.entries()
             .enumerate()
             .map(|(idx, (key, typ))| {
                 let final_type = type_from_json(typ)?;
@@ -206,5 +119,27 @@ impl FromProtocolJson for SwitchReader {
         }
 
         unreachable!();
+    }
+}
+
+pub struct StringReader;
+impl FromProtocolJson for StringReader {
+    fn from_json(name: String, arg: &JsonValue) -> Result<TypeContainer> {
+        match read_count(arg)? {
+            CountMode::Prefixed(prefix_type) => {
+                let mut data = TypeData::default();
+                data.name = name;
+                data.children.push(prefix_type.clone());
+
+                Ok(Rc::new(RefCell::new(Type {
+                    data: data,
+                    variant: Variant::PrefixedString(PrefixedStringVariant {
+                        length: Rc::downgrade(&prefix_type),
+                        length_index: 0,
+                    }),
+                })))
+            }
+            _ => unimplemented!(),
+        }
     }
 }

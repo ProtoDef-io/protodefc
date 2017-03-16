@@ -30,7 +30,7 @@ fn do_run(typ: &mut TypeContainer, parents: &mut Vec<Weak<RefCell<Type>>>) -> Re
             let root_upgrade = root.upgrade().unwrap();
             let root_inner = root_upgrade.borrow_mut();
 
-            let node = root_inner.variant.resolve_child_name(
+            let node = root_inner.variant.to_variant().resolve_child_name(
                 &root_inner.data, &raw_reference.name)?;
 
             {

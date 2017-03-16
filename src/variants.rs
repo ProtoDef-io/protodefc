@@ -1,6 +1,42 @@
 use super::{TypeVariant, TypeData, Result, WeakTypeContainer};
 use ::field_reference::FieldReference;
 
+#[derive(Debug)]
+pub enum Variant {
+    // Composite
+    Container(ContainerVariant),
+
+    // Arrays
+    ReferencedArray(ReferencedArrayVariant),
+    PrefixedArray(PrefixedArrayVariant),
+    FixedArray(FixedArrayVariant),
+
+    // Conditional
+    Switch(SwitchVariant),
+
+    // Strings/Data buffers
+    PrefixedString(PrefixedStringVariant),
+
+    // Simple
+    SimpleScalar(SimpleScalarVariant),
+    Error(ErrorVariant),
+}
+
+impl Variant {
+    pub fn to_variant<'a>(&'a self) -> &'a TypeVariant {
+        match *self {
+            Variant::Container(ref inner) => inner,
+            Variant::ReferencedArray(ref inner) => inner,
+            Variant::PrefixedArray(ref inner) => inner,
+            Variant::FixedArray(ref inner) => inner,
+            Variant::Switch(ref inner) => inner,
+            Variant::PrefixedString(ref inner) => inner,
+            Variant::SimpleScalar(ref inner) => inner,
+            Variant::Error(ref inner) => inner,
+        }
+    }
+}
+
 /// This is a simple terminal scalar.
 ///
 /// All types that take no special arguments and that have
@@ -108,6 +144,17 @@ pub struct ErrorVariant {
 }
 impl TypeVariant for ErrorVariant {
     fn resolve_child_name(&self, _data: &TypeData, _name: &str) -> Result<WeakTypeContainer> {
-        bail!("attempted to access child of switch");
+        bail!("attempted to access child of error");
+    }
+}
+
+#[derive(Debug)]
+pub struct PrefixedStringVariant {
+    pub length: WeakTypeContainer,
+    pub length_index: usize,
+}
+impl TypeVariant for PrefixedStringVariant {
+    fn resolve_child_name(&self, _data: &TypeData, _name: &str) -> Result<WeakTypeContainer> {
+        bail!("attempted to access child of string");
     }
 }

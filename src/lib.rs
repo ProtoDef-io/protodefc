@@ -1,11 +1,14 @@
 #![recursion_limit = "1024"]
 
-#[macro_use]
-extern crate error_chain;
+#[macro_use] extern crate error_chain;
+extern crate json;
+#[macro_use] extern crate nom;
+extern crate rustache;
 
 use std::fmt::Debug;
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
+use std::any::Any;
 
 pub mod backend;
 pub mod frontend;
@@ -13,10 +16,12 @@ pub mod variants;
 mod field_reference;
 pub mod pass;
 
+pub mod test_harness;
+
 #[derive(Debug)]
 pub struct Type {
     data: TypeData,
-    variant: Box<TypeVariant>,
+    variant: variants::Variant,
 }
 
 pub type TypeContainer = Rc<RefCell<Type>>;
@@ -53,10 +58,8 @@ impl Default for TypeData {
     }
 }
 
-pub trait TypeVariant: Debug {
-
+pub trait TypeVariant: Debug + Any {
     fn resolve_child_name(&self, data: &TypeData, name: &str) -> Result<Weak<RefCell<Type>>>;
-
 }
 
 pub mod errors {
@@ -91,9 +94,8 @@ mod test {
         use error_chain::ChainedError;
         match res {
             Ok(r) => println!("Ok: {:?}", r),
-            Err(err) => println!("Err: {}", err.display()),
+            _ => panic!(),
         }
-        panic!();
     }
 
 }

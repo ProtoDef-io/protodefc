@@ -3,9 +3,16 @@ name = "protodefc"
 version = "0.1.0"
 authors = ["HansiHE <hansihe@hansihe.com>"]
 
+[features]
+default = ["js_tests"]
+
+js_tests = []
+
 [dependencies]
 json = "0.11.5"
 error-chain = "0.10.0"
+nom = { version = "2.1.0", features = ["verbose-errors"] }
+rustache = "0.1.0"
 
 [lib]
 name = "protodefc"
