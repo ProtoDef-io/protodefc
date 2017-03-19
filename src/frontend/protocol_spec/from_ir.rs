@@ -2,21 +2,21 @@ use std::collections::HashMap;
 
 use ::{TypeContainer, TypeData};
 use ::variants::Variant;
-use super::ast::{Block, Statement, Value, Ident};
+use super::ast::{Block, Statement, Value, Ident, Item, ItemArg};
 
 fn ir_to_spec(type_name: String, typ: TypeContainer) -> Statement {
     let mut statement = ir_to_spec_inner(typ);
 
-    statement.items.insert(0, Value::Item {
+    statement.items.insert(0, Value::Item(Item {
         name: Ident::Simple("def_type".into()),
         args: vec![
             Value::String {
                 string: type_name,
                 is_block: false,
-            },
+            }.into(),
         ],
         block: Block::empty(),
-    });
+    }));
 
     statement
 }
@@ -32,21 +32,21 @@ fn ir_to_spec_inner(typ: TypeContainer) -> Statement {
         Variant::SimpleScalar(_) => {
             Statement {
                 attributes: HashMap::new(),
-                items: vec![Value::Item {
+                items: vec![Value::Item(Item {
                     name: Ident::RootNs(vec![
                         "native".into(),
                         typ_data.name.to_string()
                     ]),
                     args: vec![],
                     block: Block::empty(),
-                }],
+                })],
             }
         }
 
         Variant::Container(ref inner) => {
             Statement {
                 attributes: HashMap::new(),
-                items: vec![Value::Item {
+                items: vec![Value::Item(Item {
                     name: Ident::Simple("container".into()),
                     args: vec![],
                     block: Block {
@@ -54,21 +54,21 @@ fn ir_to_spec_inner(typ: TypeContainer) -> Statement {
                             let child = field.child.upgrade().unwrap();
                             let mut statement = ir_to_spec_inner(child);
 
-                            statement.items.insert(0, Value::Item {
+                            statement.items.insert(0, Value::Item(Item {
                                 name: Ident::Simple("field".into()),
                                 args: vec![
                                     Value::String {
                                         string: field.name.to_string(),
                                         is_block: false
-                                    },
+                                    }.into(),
                                 ],
                                 block: Block::empty(),
-                            });
+                            }));
 
                             statement
                         }).collect(),
                     }
-                }]
+                })]
 
 
             }

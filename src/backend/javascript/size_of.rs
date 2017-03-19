@@ -33,7 +33,7 @@ fn generate_size_of_inner(typ: TypeContainer, input_var: &str, inamer: &mut Inpu
             JSSizeOf::size_of(inner, &typ_inner.data, input_var, inamer),
         Variant::Container(ref inner) =>
             JSSizeOf::size_of(inner, &typ_inner.data, input_var, inamer),
-        Variant::PrefixedString(ref inner) =>
+        Variant::String(ref inner) =>
             JSSizeOf::size_of(inner, &typ_inner.data, input_var, inamer),
         ref variant => {
             println!("Unimplemented variant: {:?}", variant);
@@ -76,20 +76,20 @@ impl JSSizeOf for ::variants::ContainerVariant {
     }
 }
 
-impl JSSizeOf for ::variants::FixedArrayVariant {
+impl JSSizeOf for ::variants::ArrayVariant {
     fn size_of(&self, _data: &TypeData, input_var: &str, inamer: &mut InputNamer) -> Result<Block> {
         let len_input_var = inamer.get();
 
         let mut b = Block::new();
         //b.block(generate_size_of_inner(self.child.upgrade().unwrap())?);
-        b.assign("count".into(),
-                 format!("count + (int_count * {})", self.count).into());
+        //b.assign("count".into(),
+        //         format!("count + (int_count * {})", self.count).into());
         //Ok(b);
         unimplemented!();
     }
 }
 
-impl JSSizeOf for ::variants::PrefixedStringVariant {
+impl JSSizeOf for ::variants::StringVariant {
     fn size_of(&self, _data: &TypeData, input_var: &str, inamer: &mut InputNamer) -> Result<Block> {
         let mut b = Block::new();
 
@@ -100,6 +100,7 @@ impl JSSizeOf for ::variants::PrefixedStringVariant {
                                        input_var, inamer)?);
         b.assign("count".into(), format!("count + {}", length_input_var).into());
 
+        unimplemented!();
         Ok(b)
     }
 }

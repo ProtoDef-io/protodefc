@@ -14,6 +14,7 @@ pub mod backend;
 pub mod frontend;
 pub mod variants;
 mod field_reference;
+use field_reference::FieldReference;
 pub mod pass;
 
 pub mod test_harness;
@@ -31,17 +32,13 @@ pub type WeakTypeContainer = Weak<RefCell<Type>>;
 pub struct TypeData {
     name: String,
     children: Vec<TypeContainer>,
-    raw_references: Vec<field_reference::FieldReference>,
 
     /// Added in AssignParentPass
-    parent: Option<Weak<RefCell<Type>>>,
+    parent: Option<WeakTypeContainer>,
 
     /// Added in AssignIdentPass
     /// Idents increase with causality.
     ident: Option<u64>,
-
-    // Added in ResolveReferencePass
-    references: Option<Vec<Weak<RefCell<Type>>>>,
 }
 
 impl Default for TypeData {
@@ -49,17 +46,39 @@ impl Default for TypeData {
         TypeData {
             name: "".to_string(),
             children: Vec::new(),
-            raw_references: Vec::new(),
 
             parent: None,
             ident: None,
-            references: None,
         }
     }
 }
 
+type ReferenceResolver = Fn(&TypeVariant, &TypeData, &FieldReference)
+                                    -> Result<WeakTypeContainer>;
+
+/// Every primitive type supported by the compiler needs to
+/// implement this trait. It is used by compiler passes/backends
+/// to get details on how the type should function.
 pub trait TypeVariant: Debug + Any {
-    fn resolve_child_name(&self, data: &TypeData, name: &str) -> Result<Weak<RefCell<Type>>>;
+
+    /// Used by the compiler to check whether it is legal to refer
+    /// to a property of a given type variant.
+    ///
+    /// This is used by virtual container fields to get their value
+    /// when writing.
+    fn has_property(&self, data: &TypeData, prop_name: &str) -> bool;
+
+    /// Used by the resolve_reference pass to fetch a named child
+    /// for the given type.
+    ///
+    /// This should only be implemented for composite types, simple
+    /// types should simply return an error here.
+    fn resolve_child_name(&self, data: &TypeData, name: &str)
+                          -> Result<WeakTypeContainer>;
+
+    fn do_resolve_references(&mut self, data: &mut TypeData,
+                             resolver: &ReferenceResolver) -> Result<()>;
+
 }
 
 pub mod errors {

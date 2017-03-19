@@ -1,4 +1,4 @@
-use super::{Block, Statement, Value, Ident};
+use super::{Block, Statement, Value, Ident, Item, ItemArg};
 
 named!(root<&str, Block>, do_parse!(
     block: block_inner >>
@@ -8,7 +8,7 @@ named!(root<&str, Block>, do_parse!(
 ));
 
 named!(block_inner<&str, Block>, do_parse!(
-    s: many0!(statement) >>
+    s: many0!(complete!(statement)) >>
         (Block {
             statements: s,
         })
@@ -45,7 +45,7 @@ named!(statement_item<&str, Value>, do_parse!(
         has_args: opt!(tag_s!("(")) >>
         args: cond!(
             has_args.is_some(),
-            separated_nonempty_list!(separator, value)
+            separated_nonempty_list!(separator, statement_item_arg)
         ) >>
         space >>
         cond!(has_args.is_some(), tag_s!(")")) >>
@@ -57,11 +57,23 @@ named!(statement_item<&str, Value>, do_parse!(
         space >>
         cond!(has_block.is_some(), tag_s!("}")) >>
 
-        (Value::Item {
+        (Value::Item(Item {
             name: ident,
             args: args.unwrap_or_else(|| vec![]),
             block: block.unwrap_or_else(|| Block { statements: vec![], }),
-        })
+        }))
+));
+
+named!(statement_item_arg<&str, ItemArg>, do_parse!(
+    space >>
+        tag: opt!(do_parse!(
+            name: base_identifier >>
+                colon >>
+                space >>
+                (name)
+        )) >>
+        value: value >>
+        (ItemArg { tag: tag.map(|s| s.into()), value: value })
 ));
 
 named!(value<&str, Value>, alt!(
@@ -93,6 +105,7 @@ named!(contains_arrow<&str, ()>, do_parse!(space >> tag_s!("=>") >> ()));
 named!(terminator<&str, ()>, do_parse!(space >> tag_s!(";") >> ()));
 named!(separator<&str, ()>, do_parse!(space >> tag_s!(",") >> ()));
 named!(space<&str, &str>, take_while!(is_space));
+named!(colon<&str, ()>, do_parse!(tag_s!(":") >> ()));
 
 fn is_ident_char(c: char) -> bool {
     let cu = c as u8;
@@ -112,7 +125,7 @@ mod tests {
 
     #[test]
     fn parse_statement() {
-        let a = "some => thing(\"testing\") => else {} => woo(\"\"\"woo\nhoo\"\"\") {};";
+        let a = "some => thing(\"testing\", woo: \"hoo\") => else {} => woo(\"\"\"woo\nhoo\"\"\") {};";
         match statement(a) {
             ::nom::IResult::Done(_, _) => (),
             _ => panic!(),

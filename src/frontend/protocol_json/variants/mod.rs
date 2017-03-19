@@ -1,6 +1,6 @@
 use ::{Type, TypeData, TypeContainer};
 use ::variants::{Variant, SimpleScalarVariant, ContainerVariant, ContainerField, SwitchVariant,
-                 SwitchCase, PrefixedStringVariant};
+                 SwitchCase, StringVariant};
 use ::field_reference::FieldReference;
 use super::FromProtocolJson;
 use ::json::JsonValue;
@@ -34,44 +34,26 @@ impl FromProtocolJson for ContainerReader {
                 "argument for 'container' must be array, got {:?}",
                 arg);
 
-        let mut children_fields: Vec<(TypeContainer, ContainerField)> = arg.members()
-            .enumerate()
-            .map(|(idx, member)| {
-                ensure!(member.is_object(),
-                        "'container' child must be object, got {:?}",
-                        member);
-                ensure!(member.has_key("name"),
-                        "'container' child #{} missing 'name' field",
-                        idx);
-                ensure!(member.has_key("type"),
-                        "'container' child #{} missing 'type' field",
-                        idx);
+        let mut builder = ::variants::ContainerVariantBuilder::new(false);
 
-                let typ = &member["type"];
-                let name = &member["name"];
+        for (idx, member) in arg.members().enumerate() {
+            ensure!(member.is_object(),
+                    "'container' child must be object, got {:?}",
+                    member);
+            ensure!(member.has_key("name"),
+                    "'container' child #{} missing 'name' field",
+                    idx);
+            ensure!(member.has_key("type"),
+                    "'container' child #{} missing 'type' field",
+                    idx);
 
-                let final_type = type_from_json(typ)?;
-                let field = ContainerField {
-                    name: name.to_string(),
-                    child: Rc::downgrade(&final_type),
-                    child_index: idx,
-                };
+            let name = &member["name"];
+            let final_type = type_from_json(&member["type"])?;
 
-                Ok((final_type, field))
-            })
-            .collect::<Result<Vec<(TypeContainer, ContainerField)>>>()?;
+            builder.field(name.to_string(), final_type, false);
+        }
 
-        let (children, fields): (Vec<TypeContainer>, Vec<ContainerField>) =
-            children_fields.drain(0..).unzip();
-
-        let mut data = TypeData::default();
-        data.name = name;
-        data.children = children;
-
-        Ok(Rc::new(RefCell::new(Type {
-            data: data,
-            variant: Variant::Container(ContainerVariant { fields: fields }),
-        })))
+        builder.build().map_err(|e| e.into())
     }
 }
 
@@ -133,7 +115,7 @@ impl FromProtocolJson for StringReader {
 
                 Ok(Rc::new(RefCell::new(Type {
                     data: data,
-                    variant: Variant::PrefixedString(PrefixedStringVariant {
+                    variant: Variant::String(StringVariant {
                         length: Rc::downgrade(&prefix_type),
                         length_index: 0,
                     }),

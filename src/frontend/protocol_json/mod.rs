@@ -10,6 +10,9 @@ mod count;
 mod errors {
     error_chain! {
 
+        links {
+        }
+
         foreign_links {
             ParseError(::json::Error);
         }

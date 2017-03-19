@@ -1,4 +1,4 @@
-use super::{Block, Statement, Value, Ident};
+use super::{Block, Statement, Value, Ident, Item, ItemArg};
 
 pub fn print(block: &Block) -> String {
     let mut out = String::new();
@@ -47,14 +47,18 @@ fn print_value(value: &Value, out: &mut String, level: u64) {
             out.push_str(string);
             out.push_str("\"");
         },
-        Value::Item { ref name, ref args, ref block } => {
+        Value::Item(Item { ref name, ref args, ref block }) => {
             print_ident(name, out, level);
 
             // Arguments
             if args.len() != 0 {
                 out.push_str("(");
-                for (idx, value) in args.iter().enumerate() {
-                    print_value(value, out, level);
+                for (idx, &ItemArg { ref tag, ref value }) in args.iter().enumerate() {
+                    if let &Some(ref tag_i) = tag {
+                        out.push_str(tag_i);
+                        out.push_str(": ");
+                    }
+                    print_value(&value, out, level);
                     if idx != args.len() - 1 {
                         out.push_str(", ");
                     }
