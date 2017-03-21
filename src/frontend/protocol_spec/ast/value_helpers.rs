@@ -69,6 +69,10 @@ impl Item {
         Ok(())
     }
 
+    pub fn is_name_only(&self) -> bool {
+        self.args.len() == 0 && self.block.statements.len() == 0
+    }
+
 }
 
 #[cfg(test)]

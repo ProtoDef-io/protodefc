@@ -1,4 +1,18 @@
 use super::{Block, Statement, Value, Ident, Item, ItemArg};
+use ::nom::IResult;
+
+use ::errors::*;
+
+pub fn parse(input: &str) -> Result<Block> {
+    match root(input) {
+        IResult::Done(_, out) => Ok(out),
+        IResult::Error(err) => {
+            // TODO
+            panic!("parse error: {:?}", err);
+        },
+        IResult::Incomplete(_) => unreachable!(),
+    }
+}
 
 named!(root<&str, Block>, do_parse!(
     block: block_inner >>

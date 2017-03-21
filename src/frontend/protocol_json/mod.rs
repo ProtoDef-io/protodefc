@@ -1,8 +1,8 @@
 use ::{Type, TypeVariant, TypeContainer};
-use ::variants::{SimpleScalarVariant, ContainerVariant};
+use ::ir::variant::{SimpleScalarVariant, ContainerVariant};
 
 use ::json::JsonValue;
-use self::variants::{ScalarReader, ContainerReader, ArrayReader, StringReader};
+use self::variants::{ScalarReader, ContainerReader, ArrayReader};
 
 mod variants;
 mod count;
@@ -36,7 +36,7 @@ fn variant_from_name(name: String, arg: &JsonValue) -> Result<TypeContainer> {
         "container" => ContainerReader::from_json(name, arg),
         "array" => ArrayReader::from_json(name, arg),
 
-        "pstring" => StringReader::from_json(name, arg),
+        //"pstring" => StringReader::from_json(name, arg),
 
         _ => bail!("No variant matches name {:?}", name),
     }

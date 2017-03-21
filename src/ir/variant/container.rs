@@ -1,5 +1,7 @@
-use ::{TypeVariant, TypeData, Type, WeakTypeContainer, Result, TypeContainer};
+use ::{TypeVariant, TypeData, Type, WeakTypeContainer, Result, TypeContainer,
+       FieldPropertyReference};
 use super::Variant;
+use ::field_reference::FieldReference;
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -26,16 +28,48 @@ impl TypeVariant for ContainerVariant {
 #[derive(Debug)]
 pub struct ContainerField {
     pub name: String,
-    pub virt: bool,
 
     pub child: WeakTypeContainer,
     pub child_index: usize,
+
+    pub field_type: ContainerFieldType,
+}
+
+#[derive(Debug)]
+pub enum ContainerFieldType {
+    /// A field with normal behavior.
+    ///
+    /// It is both read and written, and exists in the output
+    /// data structure.
+    Normal,
+
+    /// A virtual field will be read and written, but does
+    /// not exist in the output data structure.
+    ///
+    /// It needs a to reference a property of another field
+    /// so that it knows what to write.
+    Virtual{
+        property: FieldPropertyReference,
+    },
+
+    /// A const field will neither be read or written. It
+    /// does not exist in the output data structure.
+    ///
+    /// It will always have a fixed value.
+    ///
+    /// It can have an optional property reference. If it has
+    /// one, it will validate that the property is equal to the
+    /// constant.
+    Const {
+        validate_property: Option<FieldPropertyReference>,
+        value: String,
+    },
 }
 
 pub struct ContainerVariantBuilder {
     typ: Type,
     virt: bool,
-    num_virt_fields: usize,
+    num_non_virt_fields: usize,
 }
 impl ContainerVariantBuilder {
 
@@ -49,21 +83,31 @@ impl ContainerVariantBuilder {
                 }),
             },
             virt: virt,
-            num_virt_fields: 0,
+            num_non_virt_fields: 0,
         }
     }
 
-    pub fn field(&mut self, name: String, typ: TypeContainer, virt: bool) {
+    pub fn normal_field(&mut self, name: String, typ: TypeContainer) {
+        self.field(name, typ, ContainerFieldType::Normal);
+    }
+
+    pub fn field(&mut self, name: String, typ: TypeContainer,
+                 container_type: ContainerFieldType) {
         let idx = self.typ.data.children.len();
         self.typ.data.children.push(typ.clone());
+
+        match container_type {
+            ContainerFieldType::Normal => self.num_non_virt_fields += 1,
+            _ => (),
+        }
 
         match self.typ.variant {
             Variant::Container(ref mut variant) => {
                 variant.fields.push(ContainerField {
                     name: name,
-                    virt: virt,
                     child: Rc::downgrade(&typ),
                     child_index: idx,
+                    field_type: container_type,
                 });
             }
             _ => unreachable!(),
@@ -71,7 +115,7 @@ impl ContainerVariantBuilder {
     }
 
     pub fn build(self) -> ::std::result::Result<TypeContainer, String> {
-        if self.virt && self.num_virt_fields != 0 {
+        if self.virt && self.num_non_virt_fields != 0 {
             bail!("virtual container must have exactly 1 non-virtual field");
         }
         Ok(Rc::new(RefCell::new(self.typ)))

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use ::{TypeContainer, TypeData};
-use ::variants::Variant;
+use ::ir::variant::Variant;
 use super::ast::{Block, Statement, Value, Ident, Item, ItemArg};
 
 fn ir_to_spec(type_name: String, typ: TypeContainer) -> Statement {

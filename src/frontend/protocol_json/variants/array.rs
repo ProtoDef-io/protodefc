@@ -1,5 +1,5 @@
 use ::TypeContainer;
-use ::variants::{ArrayVariant, ContainerVariantBuilder};
+use ::ir::variant::{ArrayVariant, ContainerVariantBuilder};
 use ::field_reference::FieldReference;
 use ::json::JsonValue;
 
@@ -42,10 +42,12 @@ fn make_prefixed_array(child: TypeContainer, prefix_type: TypeContainer)
                        -> Result<TypeContainer> {
     let mut virt_container = ContainerVariantBuilder::new(true);
 
-    virt_container.field("length".into(), prefix_type, true);
+    // TODO:
+    unimplemented!();
+    //virt_container.field("length".into(), prefix_type, true);
 
-    let array = ArrayVariant::new(FieldReference::parse("../length").unwrap(), child);
-    virt_container.field("data".into(), array, false);
+    //let array = ArrayVariant::new(FieldReference::parse("../length").unwrap(), child);
+    //virt_container.field("data".into(), array, false);
 
     Ok(virt_container.build().unwrap())
 }

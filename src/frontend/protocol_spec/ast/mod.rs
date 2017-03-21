@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use ::FieldReference;
+
 pub mod parser;
 pub mod printer;
 mod value_helpers;
@@ -51,6 +53,41 @@ impl Block {
     pub fn empty() -> Block {
         Block {
             statements: vec![],
+        }
+    }
+
+}
+
+impl Value {
+
+    pub fn item<'a>(&'a self) -> Option<&'a Item> {
+        if let &Value::Item(ref item) = self {
+            Some(item)
+        } else {
+            None
+        }
+    }
+
+    pub fn string<'a>(&'a self) -> Option<&'a str> {
+        if let &Value::String { ref string, .. } = self {
+            Some(string)
+        } else {
+            None
+        }
+    }
+
+    pub fn field_reference(&self) -> Option<FieldReference> {
+        self.string().and_then(|string| FieldReference::parse(string))
+    }
+
+}
+
+impl Ident {
+
+    pub fn simple_str<'a>(&'a self) -> Option<&'a str> {
+        match *self {
+            Ident::Simple(ref string) => Some(string),
+            _ => None,
         }
     }
 
