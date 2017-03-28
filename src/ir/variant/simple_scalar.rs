@@ -12,24 +12,34 @@ use ::ir::TargetType;
 /// It is up to the backend to generate code for the name of
 /// the type.
 #[derive(Debug)]
-pub struct SimpleScalarVariant {}
+pub struct SimpleScalarVariant {
+    pub target_type: Option<TargetType>,
+}
 impl TypeVariant for SimpleScalarVariant {
     fn get_type(&self, data: &TypeData) -> VariantType {
         VariantType::SimpleScalar(data.name.clone())
     }
+    fn get_result_type(&self, _data: &TypeData) -> Option<TargetType> {
+        self.target_type.clone()
+    }
     default_resolve_child_name_impl!();
     default_has_property_impl!();
     default_resolve_references!();
-    default_get_result_type_impl!();
 }
 impl SimpleScalarVariant {
     pub fn new(name: String) -> TypeContainer {
+        SimpleScalarVariant::with_target_type(name, None)
+    }
+    pub fn with_target_type(name: String, target_type: Option<TargetType>)
+                            -> TypeContainer {
         let mut data = TypeData::default();
         data.name = name;
 
         Rc::new(RefCell::new(Type {
             data: data,
-            variant: Variant::SimpleScalar(SimpleScalarVariant {}),
+            variant: Variant::SimpleScalar(SimpleScalarVariant {
+                target_type: target_type,
+            }),
         }))
     }
 }

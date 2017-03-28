@@ -14,7 +14,7 @@ pub struct TestCaseValue {
     pub serialized: Vec<u8>,
 }
 
-pub fn cases() -> Vec<TestCase> {
+pub fn json_spec_cases() -> Vec<TestCase> {
     ::std::fs::read_dir("protodef_spec/test/").unwrap()
         .map(|r| r.unwrap())
         .filter(|e| e.path().extension().map(|i| i == "json").unwrap_or(false))
@@ -84,11 +84,11 @@ fn json_to_case(case: &::json::JsonValue, base_name: String) -> TestCase {
 
 #[cfg(test)]
 mod tests {
-    use super::cases;
+    use super::json_spec_cases;
 
     #[test]
     fn gen_spec_test_cases() {
-        cases();
+        json_spec_cases();
     }
 
 }

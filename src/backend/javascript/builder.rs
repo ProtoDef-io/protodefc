@@ -49,6 +49,19 @@ impl Block {
         self.0.push(Statement::Return { expr: expr });
     }
 
+    pub fn comment(&mut self, text: String) {
+        self.0.push(Statement::Comment { text: text });
+    }
+
+    pub fn for_(&mut self, init: Expr, cond: Expr, incr: Expr, block: Block) {
+        self.0.push(Statement::For {
+            init: init,
+            cond: cond,
+            incr: incr,
+            block: block,
+        });
+    }
+
 }
 
 impl ToJavascript for Block {
@@ -115,6 +128,15 @@ pub enum Statement {
         block: Block,
     },
     Block {
+        block: Block,
+    },
+    Comment {
+        text: String,
+    },
+    For {
+        init: Expr,
+        cond: Expr,
+        incr: Expr,
         block: Block,
     },
 }
@@ -207,6 +229,27 @@ impl ToJavascript for Statement {
                 out.push_str("return ");
                 out.push_str(&expr.0);
                 out.push_str(";\n");
+            }
+            Statement::Comment { ref text } => {
+                pad_level(out, level);
+                out.push_str("// ");
+                out.push_str(text);
+                out.push_str("\n");
+            }
+            Statement::For { ref init, ref cond, ref incr, ref block } => {
+                pad_level(out, level);
+                out.push_str("for (");
+                out.push_str(&init.0);
+                out.push_str("; ");
+                out.push_str(&cond.0);
+                out.push_str("; ");
+                out.push_str(&incr.0);
+                out.push_str(") {\n");
+
+                block.to_javascript(out, level+1);
+
+                pad_level(out, level);
+                out.push_str("}\n");
             }
             //_ => unimplemented!(),
         }

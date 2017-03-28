@@ -1,5 +1,6 @@
 use ::{TypeContainer};
 use ::FieldPropertyReference;
+use ::ir::TargetType;
 use ::ir::variant::{ContainerVariant, ContainerVariantBuilder,
                     SimpleScalarVariant, ContainerFieldType, ArrayVariant};
 
@@ -21,6 +22,7 @@ fn type_values_to_ir(items: &[Value]) -> Result<TypeContainer> {
     let item = items[0].item()
         .ok_or("expected type item, got something else")?;
 
+    // TODO
     match item.name {
         Ident::Simple(ref s) => {
             match s.as_str() {
@@ -136,9 +138,15 @@ impl ValuesToIr for SimpleScalarVariant {
         ensure!(scalar_item.is_name_only(),
                 "simple scalars takes no arguments and no block");
 
+        // TODO
         match scalar_item.name {
-            Ident::Simple(ref string) =>
-                Ok(SimpleScalarVariant::new(string.clone())),
+            Ident::Simple(ref string) => {
+                let target_type = match string.as_ref() {
+                    "u8" | "i8" => Some(TargetType::Integer),
+                    _ => None,
+                };
+                Ok(SimpleScalarVariant::with_target_type(string.clone(), target_type))
+            }
             _ => unimplemented!(),
         }
     }

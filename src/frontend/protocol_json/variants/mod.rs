@@ -16,13 +16,7 @@ pub use self::array::ArrayReader;
 pub struct ScalarReader;
 impl FromProtocolJson for ScalarReader {
     fn from_json(name: String, _arg: &JsonValue) -> Result<TypeContainer> {
-        let mut data = TypeData::default();
-        data.name = name;
-
-        Ok(Rc::new(RefCell::new(Type {
-            data: data,
-            variant: Variant::SimpleScalar(SimpleScalarVariant {}),
-        })))
+        Ok(SimpleScalarVariant::new(name))
     }
 }
 
