@@ -1,6 +1,6 @@
 use ::TypeContainer;
 use ::ir::variant::{ArrayVariant, ContainerVariantBuilder};
-use ::field_reference::FieldReference;
+use ::FieldReference;
 use ::json::JsonValue;
 
 use super::super::errors::*;

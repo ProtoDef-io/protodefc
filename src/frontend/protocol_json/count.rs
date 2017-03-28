@@ -1,5 +1,5 @@
 use super::TypeContainer;
-use ::field_reference::FieldReference;
+use ::FieldReference;
 use super::errors::*;
 use ::json::JsonValue;
 use super::type_from_json;

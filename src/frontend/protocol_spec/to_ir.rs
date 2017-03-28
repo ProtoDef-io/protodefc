@@ -1,6 +1,7 @@
-use ::{TypeContainer, FieldPropertyReference};
+use ::{TypeContainer};
+use ::FieldPropertyReference;
 use ::ir::variant::{ContainerVariant, ContainerVariantBuilder,
-                    SimpleScalarVariant, ContainerFieldType};
+                    SimpleScalarVariant, ContainerFieldType, ArrayVariant};
 
 use super::ast::{Statement, Value, Item, Ident};
 use ::errors::*;
@@ -25,6 +26,7 @@ fn type_values_to_ir(items: &[Value]) -> Result<TypeContainer> {
             match s.as_str() {
                 "container" => ContainerVariant::values_to_ir(items),
                 "u8" => SimpleScalarVariant::values_to_ir(items),
+                "array" => ArrayVariant::values_to_ir(items),
                 _ => unimplemented!(),
             }.chain_err(|| format!("inside '{}' node", s))
         }
@@ -85,6 +87,7 @@ impl ValuesToIr for ContainerVariant {
                             .ok_or("'prop' field is not a string")?;
                         FieldPropertyReference {
                             reference: reference,
+                            reference_node: None,
                             property: name.into(),
                         }
                     };
@@ -92,7 +95,9 @@ impl ValuesToIr for ContainerVariant {
                     builder.field(
                         field_name.into(),
                         field_type,
-                        ContainerFieldType::Virtual { property: property, }
+                        ContainerFieldType::Virtual {
+                            property: property,
+                        }
                     );
                 },
                 Some("const_field") => {
@@ -105,6 +110,22 @@ impl ValuesToIr for ContainerVariant {
         }
 
         builder.build().map_err(|e| e.into())
+    }
+}
+
+impl ValuesToIr for ArrayVariant {
+    fn values_to_ir(items: &[Value]) -> Result<TypeContainer> {
+        let array_item = items[0].item().unwrap();
+        array_item.validate(0, &["ref"], &["ref"])?;
+
+        let reference = array_item.tagged_arg("ref").unwrap()
+            .field_reference()
+            .ok_or("array does not contain a valid reference")?;
+
+        let field_type = type_values_to_ir(&items[1..])
+            .chain_err(|| "inside array".to_owned())?;
+
+        Ok(ArrayVariant::new(reference, field_type))
     }
 }
 
@@ -128,19 +149,48 @@ mod tests {
     use super::super::ast::parser::parse;
     use super::type_def_to_ir;
 
+    use ::TypeContainer;
+    use ::errors::*;
+
+    macro_rules! unwrap_ok {
+        ($e:expr) => {
+            match $e {
+                Ok(inner) => inner,
+                Err(err) => {
+                    use error_chain::ChainedError;
+                    panic!("Expected Ok, got Err:\n{}", err.display());
+                },
+            }
+        }
+    }
+
+    macro_rules! unwrap_error {
+        ($e:expr) => {
+            match $e {
+                Ok(inner) => {
+                    panic!("Expected Err, got Ok:\n{:?}", inner);
+                },
+                Err(inner) => inner,
+            }
+        }
+    }
+
+    fn compile(spec: &str) -> Result<TypeContainer> {
+        let ast = parse(spec)?;
+        let mut ir = type_def_to_ir(&ast.statements[0])?;
+        ::run_passes(&mut ir)?;
+        Ok(ir)
+    }
+
     #[test]
     fn simple_spec() {
         let spec = r#"
 def_type("test") => container {
-    field("test_field") => u8;
-    virtual_field("something", ref: "test_field", prop: "size") => u8;
+    field("test_ffield") => u8;
+    virtual_field("something", ref: "test_field", prop: "nonexistent") => u8;
 };
 "#;
-
-        let ast = parse(spec).unwrap();
-        let ir = type_def_to_ir(&ast.statements[0]).unwrap();
-        println!("{:?}", ir);
-        panic!();
+        compile(&spec);
     }
 
 }

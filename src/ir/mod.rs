@@ -2,13 +2,21 @@ use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 use std::fmt::Debug;
 use std::any::Any;
-use std::fmt;
 
 use ::errors::*;
-use ::FieldReference;
+
+use self::variant::VariantType;
 
 pub mod variant;
 mod debug_printer;
+
+mod field_property_reference;
+mod field_reference;
+pub use self::field_reference::FieldReference;
+pub use self::field_property_reference::FieldPropertyReference;
+
+mod target_type;
+pub use self::target_type::TargetType;
 
 pub type TypeContainer = Rc<RefCell<Type>>;
 pub type WeakTypeContainer = Weak<RefCell<Type>>;
@@ -56,7 +64,11 @@ pub trait TypeVariant: Debug + Any {
     ///
     /// This is used by virtual container fields to get their value
     /// when writing.
-    fn has_property(&self, data: &TypeData, prop_name: &str) -> bool;
+    fn has_property(&self, data: &TypeData, prop_name: &str) -> Option<TargetType>;
+
+    /// Used by the compiler to determine if the type can be used
+    /// as a count / in a union.
+    fn get_result_type(&self, data: &TypeData) -> Option<TargetType>;
 
     /// Used by the resolve_reference pass to fetch a named child
     /// for the given type.
@@ -68,5 +80,7 @@ pub trait TypeVariant: Debug + Any {
 
     fn do_resolve_references(&mut self, data: &mut TypeData,
                              resolver: &ReferenceResolver) -> Result<()>;
+
+    fn get_type(&self, data: &TypeData) -> VariantType;
 
 }

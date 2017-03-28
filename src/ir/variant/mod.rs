@@ -1,21 +1,30 @@
 use super::{Type, TypeVariant, TypeData, Result, WeakTypeContainer, TypeContainer};
-use ::field_reference::FieldReference;
+use ::FieldReference;
 
 use std::rc::Rc;
 use std::cell::RefCell;
 
 macro_rules! default_resolve_child_name_impl {
     () => {
-        fn resolve_child_name(&self, _data: &TypeData, _name: &str)
+        fn resolve_child_name(&self, data: &TypeData, _name: &str)
                               -> Result<WeakTypeContainer> {
-            bail!("attempted to access child of unsupported type");
+            bail!("attempted to access child of unsupported type {:?}",
+                  self.get_type(data));
         }
     }
 }
 macro_rules! default_has_property_impl {
     () => {
-        fn has_property(&self, _data: &TypeData, _prop_name: &str) -> bool {
-            false
+        fn has_property(&self, _data: &TypeData, _prop_name: &str)
+                        -> Option<TargetType> {
+            None
+        }
+    }
+}
+macro_rules! default_get_result_type_impl {
+    () => {
+        fn get_result_type(&self, _data: &TypeData) -> Option<TargetType> {
+            None
         }
     }
 }
@@ -89,4 +98,29 @@ impl Variant {
             Variant::Error(ref mut inner) => inner,
         }
     }
+
+    pub fn get_type(&self, data: &TypeData) -> VariantType {
+        match *self {
+            Variant::Container(_) => VariantType::Container,
+            Variant::Array(_) => VariantType::Array,
+            Variant::Union(_) => VariantType::Union,
+            Variant::SizedBuffer(_) => VariantType::SizedBuffer,
+            Variant::TerminatedBuffer(_) => VariantType::TerminatedBuffer,
+            Variant::SimpleScalar(ref variant) =>
+                VariantType::SimpleScalar(data.name.clone()),
+            Variant::Error(_) => VariantType::Error,
+        }
+    }
+
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum VariantType {
+    Container,
+    Array,
+    Union,
+    SizedBuffer,
+    TerminatedBuffer,
+    SimpleScalar(String),
+    Error,
 }

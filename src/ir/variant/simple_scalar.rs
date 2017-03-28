@@ -1,7 +1,8 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use super::Variant;
+use super::{Variant, VariantType};
 use ::ir::{Type, TypeVariant, TypeData, Result, WeakTypeContainer, TypeContainer};
+use ::ir::TargetType;
 
 /// This is a simple terminal scalar.
 ///
@@ -13,9 +14,13 @@ use ::ir::{Type, TypeVariant, TypeData, Result, WeakTypeContainer, TypeContainer
 #[derive(Debug)]
 pub struct SimpleScalarVariant {}
 impl TypeVariant for SimpleScalarVariant {
+    fn get_type(&self, data: &TypeData) -> VariantType {
+        VariantType::SimpleScalar(data.name.clone())
+    }
     default_resolve_child_name_impl!();
     default_has_property_impl!();
     default_resolve_references!();
+    default_get_result_type_impl!();
 }
 impl SimpleScalarVariant {
     pub fn new(name: String) -> TypeContainer {

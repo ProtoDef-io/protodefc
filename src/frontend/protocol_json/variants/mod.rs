@@ -1,6 +1,6 @@
 use ::ir::{Type, TypeData, TypeContainer};
 use ::ir::variant::{Variant, SimpleScalarVariant, ContainerVariant, ContainerField};
-use ::field_reference::FieldReference;
+use ::FieldReference;
 use super::FromProtocolJson;
 use ::json::JsonValue;
 use super::errors::*;

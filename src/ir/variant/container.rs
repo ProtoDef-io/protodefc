@@ -1,7 +1,8 @@
-use ::{TypeVariant, TypeData, Type, WeakTypeContainer, Result, TypeContainer,
-       FieldPropertyReference};
-use super::Variant;
-use ::field_reference::FieldReference;
+use ::{TypeVariant, TypeData, Type, WeakTypeContainer, Result, TypeContainer, CompilerError};
+use super::{Variant, VariantType};
+use ::FieldReference;
+use ::FieldPropertyReference;
+use ::ir::TargetType;
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -12,15 +13,64 @@ pub struct ContainerVariant {
     pub fields: Vec<ContainerField>,
 }
 impl TypeVariant for ContainerVariant {
+
+    fn get_type(&self, _data: &TypeData) -> VariantType {
+        VariantType::Container
+    }
+
     fn resolve_child_name(&self, _data: &TypeData, name: &str) -> Result<WeakTypeContainer> {
-        self.fields.iter()
+        self.fields
+            .iter()
             .find(|f| f.name == name)
             .map(|f| f.child.clone())
-            .ok_or("container has no field".into())
+            .ok_or_else(|| CompilerError::ChildResolveError {
+                name: name.to_owned(),
+                parent_variant: "container".into(),
+            }.into())
+
     }
+
     default_has_property_impl!();
-    fn do_resolve_references(&mut self, data: &mut TypeData,
-                             resolver: &::ReferenceResolver) -> Result<()> {
+    default_get_result_type_impl!();
+
+    fn do_resolve_references(&mut self,
+                             data: &mut TypeData,
+                             resolver: &::ReferenceResolver)
+                             -> Result<()> {
+
+        let mut resolves: Vec<WeakTypeContainer> = Vec::with_capacity(self.fields.len());
+
+        for field in &self.fields {
+            match field.field_type {
+                ContainerFieldType::Virtual { ref property } => {
+                    let prop_node = resolver(self, data, &property.reference)?;
+
+                    let prop_node_u = prop_node.upgrade().unwrap();
+                    let prop_node_ui = prop_node_u.borrow();
+
+                    let prop_valid = prop_node_ui.variant
+                        .to_variant()
+                        .has_property(&prop_node_ui.data, &property.property);
+                    ensure!(prop_valid != None, CompilerError::NoProperty {
+                        property: property.property.clone(),
+                        variant: prop_node_ui.variant.get_type(&prop_node_ui.data),
+                    });
+
+                    resolves.push(prop_node);
+                }
+                _ => (),
+            }
+        }
+
+        for field in self.fields.iter_mut().rev() {
+            match field.field_type {
+                ContainerFieldType::Virtual { ref mut property } => {
+                    property.reference_node = resolves.pop();
+                }
+                _ => (),
+            }
+        }
+
         Ok(())
     }
 }
@@ -48,9 +98,7 @@ pub enum ContainerFieldType {
     ///
     /// It needs a to reference a property of another field
     /// so that it knows what to write.
-    Virtual{
-        property: FieldPropertyReference,
-    },
+    Virtual { property: FieldPropertyReference },
 
     /// A const field will neither be read or written. It
     /// does not exist in the output data structure.
@@ -72,7 +120,6 @@ pub struct ContainerVariantBuilder {
     num_non_virt_fields: usize,
 }
 impl ContainerVariantBuilder {
-
     pub fn new(virt: bool) -> ContainerVariantBuilder {
         ContainerVariantBuilder {
             typ: Type {
@@ -91,8 +138,7 @@ impl ContainerVariantBuilder {
         self.field(name, typ, ContainerFieldType::Normal);
     }
 
-    pub fn field(&mut self, name: String, typ: TypeContainer,
-                 container_type: ContainerFieldType) {
+    pub fn field(&mut self, name: String, typ: TypeContainer, container_type: ContainerFieldType) {
         let idx = self.typ.data.children.len();
         self.typ.data.children.push(typ.clone());
 
@@ -120,5 +166,4 @@ impl ContainerVariantBuilder {
         }
         Ok(Rc::new(RefCell::new(self.typ)))
     }
-
 }

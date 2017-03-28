@@ -1,16 +1,28 @@
 use super::{Block, Statement, Value, Ident, Item, ItemArg};
 use ::nom::IResult;
+use ::nom::verbose_errors::Err as NomErr;
 
 use ::errors::*;
 
 pub fn parse(input: &str) -> Result<Block> {
     match root(input) {
         IResult::Done(_, out) => Ok(out),
-        IResult::Error(err) => {
-            // TODO
-            panic!("parse error: {:?}", err);
-        },
+        IResult::Error(err) =>
+            bail!(CompilerError::NomParseError(error_to_pos(&err, input.len()))),
         IResult::Incomplete(_) => unreachable!(),
+    }
+}
+
+fn error_to_pos(err: &NomErr<&str>, input_len: usize) -> NomErr<usize> {
+    match *err {
+        NomErr::Code(ref kind) => NomErr::Code(kind.clone()),
+        NomErr::Node(ref kind, ref next) =>
+            NomErr::Node(kind.clone(), Box::new(error_to_pos(&**next, input_len))),
+        NomErr::Position(ref kind, ref pos) =>
+            NomErr::Position(kind.clone(), input_len-pos.len()),
+        NomErr::NodePosition(ref kind, ref pos, ref next) =>
+            NomErr::NodePosition(kind.clone(), input_len-pos.len(),
+                                 Box::new(error_to_pos(&**next, input_len))),
     }
 }
 

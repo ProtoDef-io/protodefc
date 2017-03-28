@@ -4,4 +4,5 @@ mod serialize;
 mod deserialize;
 mod size_of;
 
-mod test_harness;
+#[cfg(all(test, feature = "js_tests"))]
+mod tests;
