@@ -43,13 +43,40 @@ def_type("test") => container {
 fn array() {
     test_size_of(
         r#"
-def_type("test") => container {
+def_type("test") => container(virtual: "true") {
     virtual_field("len", ref: "arr", prop: "length") => u8;
     field("arr") => array(ref: "../len") => u8;
 };
 "#,
-        "{arr: [1, 2, 3]}",
+        "[1, 2, 3]",
         "4"
+    );
+}
+
+#[test]
+fn union() {
+    let spec = r#"
+def_type("test") => container(virtual: "true") {
+    virtual_field("tag", ref: "data", prop: "tag") => u8;
+    field("data") => union("test_union", ref: "../tag") {
+        variant("zero", match: "0") => u8;
+        variant("one", match: "1") => container {
+            field("woo") => u8;
+            field("hoo") => u8;
+        };
+    };
+};
+"#;
+
+    test_size_of(
+        spec,
+        "{tag: \"zero\", data: 0}",
+        "2",
+    );
+    test_size_of(
+        spec,
+        "{tag: \"one\", data: {woo: 0, hoo: 1}}",
+        "3"
     );
 }
 

@@ -23,7 +23,8 @@ impl TypeVariant for ArrayVariant {
         VariantType::Array
     }
 
-    fn has_property(&self, _data: &TypeData, name: &str) -> Option<TargetType> {
+    fn has_property(&self, _data: &TypeData, name: &str)
+                    -> Option<TargetType> {
         match name {
             "length" => Some(TargetType::Integer),
             _ => None,

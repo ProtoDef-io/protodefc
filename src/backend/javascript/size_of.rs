@@ -1,6 +1,6 @@
-use ::ir::{TypeContainer, TypeVariant, TypeData};
-use ::ir::variant::Variant;
-use super::builder::Block;
+use ::ir::{Type, TypeContainer, WeakTypeContainer, TypeVariant, TypeData};
+use ::ir::variant::{Variant, ContainerVariant, ContainerField};
+use super::builder::{Block, Expr};
 use ::errors::*;
 
 pub fn generate_size_of(typ: TypeContainer) -> Result<Block> {
@@ -22,20 +22,17 @@ pub fn generate_size_of(typ: TypeContainer) -> Result<Block> {
 
 fn generate_size_of_inner(typ: TypeContainer) -> Result<Block> {
     let typ_inner = typ.borrow();
+    size_of_for_type(&*typ_inner)
+        .size_of(&typ_inner.data)
+}
 
-    match typ_inner.variant {
-        Variant::SimpleScalar(ref inner) =>
-            JSSizeOf::size_of(inner, &typ_inner.data),
-        Variant::Container(ref inner) =>
-            JSSizeOf::size_of(inner, &typ_inner.data),
-        Variant::Array(ref inner) =>
-            JSSizeOf::size_of(inner, &typ_inner.data),
-        Variant::SizedBuffer(ref inner) =>
-            JSSizeOf::size_of(inner, &typ_inner.data),
-        ref variant => {
-            println!("Unimplemented variant: {:?}", variant);
-            unimplemented!();
-        },
+fn size_of_for_type<'a>(typ: &'a Type) -> &'a JSSizeOf {
+    match typ.variant {
+        Variant::SimpleScalar(ref inner) => inner,
+        Variant::Container(ref inner) => inner,
+        Variant::Array(ref inner) => inner,
+        //Variant::Union(ref inner) => inner,
+        _ => unimplemented!(),
     }
 }
 
@@ -49,6 +46,7 @@ fn input_for_type(typ: TypeContainer) -> String {
 
 trait JSSizeOf: TypeVariant {
     fn size_of(&self, data: &TypeData) -> Result<Block>;
+    fn property_getter(&self, data: &TypeData, name: &str) -> Result<Block>;
 }
 
 impl JSSizeOf for ::ir::variant::SimpleScalarVariant {
@@ -60,6 +58,47 @@ impl JSSizeOf for ::ir::variant::SimpleScalarVariant {
                          data.name, input_for(data)).into());
         Ok(b)
     }
+    fn property_getter(&self, data: &TypeData, name: &str) -> Result<Block> {
+        unreachable!();
+    }
+}
+
+use ::ir::variant::ContainerFieldType as CFT;
+
+fn ident_for_weak_type_container(cont: WeakTypeContainer) -> u64 {
+    let inner = cont.upgrade().unwrap();
+    let inner_b = inner.borrow();
+    inner_b.data.ident.unwrap()
+}
+
+fn get_field_accessor(variant: &ContainerVariant, data: &TypeData,
+                      field: &ContainerField) -> Result<Expr> {
+    match field.field_type {
+        CFT::Normal => {
+            if variant.virt {
+                Ok(input_for(data).into())
+            } else {
+                Ok(format!("{}[\"{}\"]", input_for(data), field.name).into())
+            }
+        }
+        CFT::Virtual { ref property } => {
+            assert!(property.property == "length");
+
+            let property_target_ident = ident_for_weak_type_container(
+                property.reference_node.clone().unwrap());
+
+            for field in &variant.fields {
+                let field_node_ident = ident_for_weak_type_container(
+                    field.child.clone());
+
+                if property_target_ident == field_node_ident {
+                    
+                }
+            }
+            unimplemented!()
+        }
+        _ => unimplemented!(),
+    }
 }
 
 impl JSSizeOf for ::ir::variant::ContainerVariant {
@@ -69,6 +108,57 @@ impl JSSizeOf for ::ir::variant::ContainerVariant {
         b.comment("start container".into());
 
         for field in &self.fields {
+            let child_typ = field.child.upgrade().unwrap();
+            let child_input_var = input_for_type(child_typ.clone());
+            match field.field_type {
+                CFT::Normal => {
+                    // Virtual containers are guaranteed to only have 1
+                    // non-virtual field.
+                    if self.virt {
+                        b.let_assign(
+                            child_input_var.clone(),
+                            input_for(data).into()
+                        );
+                    } else {
+                        b.let_assign(
+                            child_input_var.clone(),
+                            format!("{}[\"{}\"]", input_for(data), field.name).into()
+                        );
+                    }
+                }
+                CFT::Virtual { ref property } => {
+                    // TODO
+                    assert!(property.property == "length");
+
+                    if self.virt {
+                        b.let_assign(
+                            child_input_var.clone(),
+                            input_for(data).into()
+                        );
+                    } else {
+                        let property_target = property.reference_node
+                            .clone().unwrap()
+                            .upgrade().unwrap();
+
+                        let property_target_inner = property_target.borrow();
+
+                        let property_target_parent = property_target_inner
+                            .data.parent
+                            .clone().unwrap().upgrade().unwrap();
+
+                        b.let_assign(
+                            child_input_var.clone(),
+                            format!("{}[\"{}\"].length",
+                                    input_for_type(property_target_parent),
+                                    property.reference.name).into()
+                        );
+                    }
+                }
+                _ => unimplemented!(),
+            }
+        }
+
+        for field in &self.fields {
             let mut ib = Block::new();
 
             let child_typ = field.child.upgrade().unwrap();
@@ -76,32 +166,11 @@ impl JSSizeOf for ::ir::variant::ContainerVariant {
 
             let child_input_var = input_for_type(child_typ.clone());
 
-            use ::ir::variant::ContainerFieldType as CFT;
             match field.field_type {
                 CFT::Normal => {
-                    b.let_assign(
-                        child_input_var.clone(),
-                        format!("{}[\"{}\"]", input_for(data), field.name).into()
-                    );
                     ib.scope(generate_size_of_inner(child_typ)?);
                 }
                 CFT::Virtual { ref property } => {
-                    // TODO
-                    assert!(property.property == "length");
-
-                    let property_target = property.reference_node.clone().unwrap()
-                        .upgrade().unwrap();
-                    let property_target_inner = property_target.borrow();
-
-                    let property_target_parent = property_target_inner.data.parent
-                        .clone().unwrap().upgrade().unwrap();
-
-                    b.let_assign(
-                        child_input_var.clone(),
-                        format!("{}[\"{}\"].length",
-                                input_for_type(property_target_parent),
-                                property.reference.name).into()
-                    );
                     ib.scope(generate_size_of_inner(child_typ)?);
                 }
                 _ => unimplemented!(),
@@ -112,6 +181,9 @@ impl JSSizeOf for ::ir::variant::ContainerVariant {
 
         b.comment("end container".into());
         Ok(b)
+    }
+    fn property_getter(&self, data: &TypeData, name: &str) -> Result<Block> {
+        unreachable!();
     }
 }
 
@@ -146,21 +218,18 @@ impl JSSizeOf for ::ir::variant::ArrayVariant {
 
         Ok(b)
     }
-}
+    fn property_getter(&self, data: &TypeData, name: &str) -> Result<Block> {
+        match name {
+            "length" => {
+                let mut b = Block::new();
 
-impl JSSizeOf for ::ir::variant::SizedBufferVariant {
-    fn size_of(&self, _data: &TypeData) -> Result<Block> {
-        let mut b = Block::new();
+                let input_var = input_for(data);
+                
 
-        //let length_input_var = inamer.get();
-        //// FIXME: THIS IS WRONG, FIX IT
-        //b.let_assign(length_input_var.clone(), format!("{}.length", input_var).into());
-        //b.block(generate_size_of_inner(self.length.upgrade().unwrap(),
-        //                               input_var, inamer)?);
-        //b.assign("count".into(), format!("count + {}", length_input_var).into());
-
-        unimplemented!();
-        Ok(b)
+                Ok(b)
+            }
+            _ => unreachable!(),
+        }
     }
 }
 

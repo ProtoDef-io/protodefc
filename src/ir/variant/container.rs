@@ -161,7 +161,7 @@ impl ContainerVariantBuilder {
     }
 
     pub fn build(self) -> ::std::result::Result<TypeContainer, String> {
-        if self.virt && self.num_non_virt_fields != 0 {
+        if self.virt && self.num_non_virt_fields != 1 {
             bail!("virtual container must have exactly 1 non-virtual field");
         }
         Ok(Rc::new(RefCell::new(self.typ)))

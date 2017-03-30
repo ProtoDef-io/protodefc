@@ -2,9 +2,10 @@ use ::{TypeContainer};
 use ::FieldPropertyReference;
 use ::ir::TargetType;
 use ::ir::variant::{ContainerVariant, ContainerVariantBuilder,
-                    SimpleScalarVariant, ContainerFieldType, ArrayVariant};
+                    SimpleScalarVariant, ContainerFieldType, ArrayVariant,
+                    UnionVariant, UnionVariantBuilder};
 
-use super::ast::{Statement, Value, Item, Ident};
+use super::ast::{Statement, Value, Ident};
 use ::errors::*;
 
 pub fn type_def_to_ir(stmt: &Statement) -> Result<TypeContainer> {
@@ -27,8 +28,9 @@ fn type_values_to_ir(items: &[Value]) -> Result<TypeContainer> {
         Ident::Simple(ref s) => {
             match s.as_str() {
                 "container" => ContainerVariant::values_to_ir(items),
-                "u8" => SimpleScalarVariant::values_to_ir(items),
                 "array" => ArrayVariant::values_to_ir(items),
+                "union" => UnionVariant::values_to_ir(items),
+                "u8" => SimpleScalarVariant::values_to_ir(items),
                 _ => unimplemented!(),
             }.chain_err(|| format!("inside '{}' node", s))
         }
@@ -44,10 +46,14 @@ impl ValuesToIr for ContainerVariant {
     fn values_to_ir(items: &[Value]) -> Result<TypeContainer> {
         let container_item = items[0].item().unwrap();
 
-        ensure!(container_item.args.len() == 0,
-                "container item takes no arguments");
+        container_item.validate(0, &["virtual"], &[])?;
 
-        let mut builder = ContainerVariantBuilder::new(false);
+        let is_virtual = container_item.get_tagged("virtual")
+            .and_then(|i| i.string())
+            .map(|i| i == "true")
+            .unwrap_or(false);
+
+        let mut builder = ContainerVariantBuilder::new(is_virtual);
 
         for stmt in &container_item.block.statements {
             let block_item = stmt.items[0].item()
@@ -149,6 +155,48 @@ impl ValuesToIr for SimpleScalarVariant {
             }
             _ => unimplemented!(),
         }
+    }
+}
+
+impl ValuesToIr for UnionVariant {
+    fn values_to_ir(items: &[Value]) -> Result<TypeContainer> {
+        let union_item = items[0].item().unwrap();
+        union_item.validate(1, &["ref"], &["ref"])?;
+
+        let union_name = union_item.arg(0).unwrap()
+            .string()
+            .ok_or("union name must be a string")?;
+        let tag_ref = union_item.tagged_arg("ref").unwrap()
+            .field_reference()
+            .ok_or("invalid field reference")?;
+
+        let mut builder = UnionVariantBuilder::new(union_name.into(), tag_ref);
+
+        for stmt in &union_item.block.statements {
+            let block_item = stmt.items[0].item()
+                .ok_or("container block can only contain items")?;
+
+            match block_item.name.simple_str() {
+                Some("variant") => {
+                    block_item.validate(1, &["match"], &["match"])?;
+
+                    let variant_name = block_item.arg(0).unwrap()
+                        .string()
+                        .ok_or("variant name arg must be string")?;
+                    let variant_match = block_item.tagged_arg("match").unwrap()
+                        .string()
+                        .ok_or("variant match arg must be string")?;
+
+                    let field_type = type_values_to_ir(&stmt.items[1..])?;
+
+                    builder.case(variant_match.into(), variant_name.into(),
+                                 field_type);
+                }
+                _ => bail!("union block can only contain 'variant'"),
+            }
+        }
+
+        builder.build().map_err(|e| e.into())
     }
 }
 

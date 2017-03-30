@@ -26,7 +26,14 @@ pub struct UnionCase {
 
 impl TypeVariant for UnionVariant {
     default_resolve_child_name_impl!();
-    default_has_property_impl!();
+
+    fn has_property(&self, _data: &TypeData, name: &str) -> Option<TargetType> {
+        // TODO: Infer type
+        match name {
+            "tag" => Some(TargetType::Integer),
+            _ => None,
+        }
+    }
 
     fn get_type(&self, _data: &TypeData) -> VariantType {
         VariantType::Union

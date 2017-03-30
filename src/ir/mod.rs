@@ -64,7 +64,8 @@ pub trait TypeVariant: Debug + Any {
     ///
     /// This is used by virtual container fields to get their value
     /// when writing.
-    fn has_property(&self, data: &TypeData, prop_name: &str) -> Option<TargetType>;
+    fn has_property(&self, data: &TypeData, prop_name: &str)
+                    -> Option<TargetType>;
 
     /// Used by the compiler to determine if the type can be used
     /// as a count / in a union.

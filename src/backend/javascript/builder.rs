@@ -139,6 +139,9 @@ pub enum Statement {
         incr: Expr,
         block: Block,
     },
+    //Switch {
+
+    //},
 }
 
 impl ToJavascript for Statement {

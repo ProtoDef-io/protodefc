@@ -38,7 +38,7 @@ macro_rules! default_resolve_references {
 }
 
 mod union;
-pub use self::union::UnionVariant;
+pub use self::union::{UnionVariant, UnionVariantBuilder};
 
 mod container;
 pub use self::container::{ContainerVariant, ContainerField, ContainerVariantBuilder, ContainerFieldType};
