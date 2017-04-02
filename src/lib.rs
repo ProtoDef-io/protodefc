@@ -5,11 +5,6 @@ extern crate json;
 #[macro_use] extern crate nom;
 extern crate rustache;
 
-use std::fmt::Debug;
-use std::rc::{Rc, Weak};
-use std::cell::RefCell;
-use std::any::Any;
-
 pub mod ir;
 pub use ir::{TypeContainer, WeakTypeContainer, Type, TypeData, ReferenceResolver, TypeVariant};
 pub use ir::{FieldPropertyReference, FieldReference};
@@ -51,7 +46,6 @@ mod test {
     fn test_from_json() {
         let input = "[\"container\", [{\"name\": \"foo\", \"type\": \"i8\"}]]";
         let res = ::json_to_final_ast(&input);
-        use error_chain::ChainedError;
         match res {
             Ok(r) => println!("Ok: {:?}", r),
             _ => panic!(),

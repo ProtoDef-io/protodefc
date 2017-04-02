@@ -63,7 +63,7 @@ impl CompilerError {
             CompilerError::InsideNamed { ref name } =>
                 format!("inside named '{:?}'",
                         name),
-            CompilerError::NomParseError(ref error) =>
+            CompilerError::NomParseError(_) =>
                 format!("nom parse errror"),
         }
     }

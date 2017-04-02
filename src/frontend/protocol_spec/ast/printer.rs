@@ -80,7 +80,7 @@ fn print_value(value: &Value, out: &mut String, level: u64) {
     }
 }
 
-fn print_ident(ident: &Ident, out: &mut String, level: u64) {
+fn print_ident(ident: &Ident, out: &mut String, _level: u64) {
     match *ident {
         Ident::Simple(ref string) => {
             out.push_str(string);

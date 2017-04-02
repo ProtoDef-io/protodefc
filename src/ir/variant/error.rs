@@ -1,4 +1,4 @@
-use ::ir::{Type, TypeVariant, TypeData, Result, WeakTypeContainer, TypeContainer};
+use ::ir::{TypeVariant, TypeData, Result, WeakTypeContainer};
 use ::ir::TargetType;
 use super::VariantType;
 

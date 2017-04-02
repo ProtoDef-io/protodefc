@@ -1,4 +1,4 @@
-use ::{TypeVariant, TypeData, Type, WeakTypeContainer, Result, TypeContainer};
+use ::{TypeVariant, TypeData, WeakTypeContainer, Result};
 use ::ir::TargetType;
 use ::FieldReference;
 use super::VariantType;
@@ -9,7 +9,7 @@ pub struct SizedBufferVariant {
 }
 impl TypeVariant for SizedBufferVariant {
 
-    fn get_type(&self, data: &TypeData) -> VariantType {
+    fn get_type(&self, _data: &TypeData) -> VariantType {
         VariantType::TerminatedBuffer
     }
 

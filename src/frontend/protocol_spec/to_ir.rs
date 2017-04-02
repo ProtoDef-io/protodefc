@@ -246,7 +246,7 @@ def_type("test") => container {
     virtual_field("something", ref: "test_field", prop: "nonexistent") => u8;
 };
 "#;
-        compile(&spec);
+        compile(&spec).unwrap_err();
     }
 
 }

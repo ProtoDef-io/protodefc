@@ -1,6 +1,5 @@
 use ::{TypeVariant, TypeData, Type, WeakTypeContainer, Result, TypeContainer, CompilerError};
 use super::{Variant, VariantType};
-use ::FieldReference;
 use ::FieldPropertyReference;
 use ::ir::TargetType;
 

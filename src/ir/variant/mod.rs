@@ -1,8 +1,4 @@
-use super::{Type, TypeVariant, TypeData, Result, WeakTypeContainer, TypeContainer};
-use ::FieldReference;
-
-use std::rc::Rc;
-use std::cell::RefCell;
+use super::{TypeVariant, TypeData};
 
 macro_rules! default_resolve_child_name_impl {
     () => {
@@ -106,7 +102,7 @@ impl Variant {
             Variant::Union(_) => VariantType::Union,
             Variant::SizedBuffer(_) => VariantType::SizedBuffer,
             Variant::TerminatedBuffer(_) => VariantType::TerminatedBuffer,
-            Variant::SimpleScalar(ref variant) =>
+            Variant::SimpleScalar(_) =>
                 VariantType::SimpleScalar(data.name.clone()),
             Variant::Error(_) => VariantType::Error,
         }

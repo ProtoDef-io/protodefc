@@ -78,8 +78,6 @@ def_type("test") => container(virtual: "true") {
         "{tag: \"one\", data: {woo: 0, hoo: 1}}",
         "3"
     );
-
-    panic!();
 }
 
 //#[test]

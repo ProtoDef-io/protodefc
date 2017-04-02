@@ -1,6 +1,5 @@
-use ::{TypeVariant, TypeData, Type, WeakTypeContainer, Result, TypeContainer};
+use ::{TypeVariant, TypeData, WeakTypeContainer, Result};
 use ::ir::TargetType;
-use ::FieldReference;
 use super::VariantType;
 
 #[derive(Debug)]
@@ -8,7 +7,7 @@ pub struct TerminatedBufferVariant {
 }
 impl TypeVariant for TerminatedBufferVariant {
 
-    fn get_type(&self, data: &TypeData) -> VariantType {
+    fn get_type(&self, _data: &TypeData) -> VariantType {
         VariantType::TerminatedBuffer
     }
 

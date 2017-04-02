@@ -1,10 +1,7 @@
 use super::CompilePass;
 use super::Result;
 
-use ::{Type, TypeContainer};
-
-use std::rc::{Rc, Weak};
-use std::cell::RefCell;
+use ::TypeContainer;
 
 pub struct AssignIdentPass;
 

@@ -1,5 +1,4 @@
 use ::std::io::Read;
-use ::std::iter;
 
 #[derive(Debug)]
 pub struct TestCase {
