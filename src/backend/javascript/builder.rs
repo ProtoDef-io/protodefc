@@ -62,6 +62,13 @@ impl Block {
         });
     }
 
+    pub fn switch(&mut self, input: Expr, cases: Vec<(Expr, Block)>) {
+        self.0.push(Statement::Switch {
+            input: input,
+            cases: cases,
+        })
+    }
+
 }
 
 impl ToJavascript for Block {
@@ -72,7 +79,7 @@ impl ToJavascript for Block {
     }
 }
 
-pub struct Expr(String);
+pub struct Expr(pub String);
 impl From<String> for Expr {
     fn from(string: String) -> Self {
         Expr(string)
@@ -139,9 +146,10 @@ pub enum Statement {
         incr: Expr,
         block: Block,
     },
-    //Switch {
-
-    //},
+    Switch {
+        input: Expr,
+        cases: Vec<(Expr, Block)>,
+    },
 }
 
 impl ToJavascript for Statement {
@@ -250,6 +258,28 @@ impl ToJavascript for Statement {
                 out.push_str(") {\n");
 
                 block.to_javascript(out, level+1);
+
+                pad_level(out, level);
+                out.push_str("}\n");
+            }
+            Statement::Switch { ref input, ref cases } => {
+                pad_level(out, level);
+                out.push_str("switch (");
+                out.push_str(&input.0);
+                out.push_str(") {\n");
+
+                for case in cases {
+                    pad_level(out, level+1);
+                    out.push_str(&(case.0).0);
+                    out.push_str(": {\n");
+
+                    case.1.to_javascript(out, level+2);
+
+                    pad_level(out, level+2);
+                    out.push_str("break;\n");
+                    pad_level(out, level+1);
+                    out.push_str("}\n");
+                }
 
                 pad_level(out, level);
                 out.push_str("}\n");

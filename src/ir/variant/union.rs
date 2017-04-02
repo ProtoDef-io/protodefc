@@ -8,20 +8,20 @@ use std::cell::RefCell;
 
 #[derive(Debug)]
 pub struct UnionVariant {
-    union_name: String,
+    pub union_name: String,
 
-    match_field_ref: FieldReference,
-    match_field: Option<WeakTypeContainer>,
-    match_type: Option<TargetType>,
+    pub match_field_ref: FieldReference,
+    pub match_field: Option<WeakTypeContainer>,
+    pub match_type: Option<TargetType>,
 
-    cases: Vec<UnionCase>,
+    pub cases: Vec<UnionCase>,
 }
 
 #[derive(Debug)]
 pub struct UnionCase {
-    match_val_str: String,
-    case_name: String,
-    child: WeakTypeContainer,
+    pub match_val_str: String,
+    pub case_name: String,
+    pub child: WeakTypeContainer,
 }
 
 impl TypeVariant for UnionVariant {

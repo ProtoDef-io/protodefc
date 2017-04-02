@@ -13,7 +13,6 @@ fn simple_scalar() {
     test_size_of(r#"
 def_type("test") => u8;
 "#);
-    panic!();
 }
 
 #[test]
@@ -34,5 +33,4 @@ def_type("test") => container {
     field("arr") => array(ref: "../len") => u8;
 };
 "#);
-    panic!();
 }
