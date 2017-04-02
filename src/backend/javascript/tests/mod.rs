@@ -18,23 +18,22 @@ fn nodejs_run(script: &str) -> Vec<u8> {
     res.stdout
 }
 
-pub fn test_with_data_eq(function: &str, data: &str, compare: &str) {
+pub fn test_with_data_eq(function: &str, compare: &str) {
     let script = format!("
 let types = {};
 let test_fun = {};
-let in_data = {};
-let expected_out = {};
 
 var assert = require(\"assert\");
-assert.deepEqual(test_fun(in_data), expected_out);
+
+{}
 
 console.log(\"ok\");
-", BUILTIN_TYPES, function, data, compare);
+", BUILTIN_TYPES, function, compare);
 
     println!("Full test script: \"\n{}\"", script);
     let res = nodejs_run(&script);
 
-    assert_eq!(res, b"ok\n");
+    assert!(res.ends_with(b"ok\n"));
 }
 
 #[test]
@@ -56,7 +55,7 @@ fn test_with_data_eq_test() {
     let data = "{\"some\": \"thing\", \"else\": 0}";
     test_with_data_eq(
         "function(input) { return input; }",
-        data, data,
+        &format!("assert.deepEqual(test_fun({}), {});", data, data),
     );
 }
 
@@ -67,6 +66,6 @@ fn test_with_data_eq_test_fail() {
     let data2 = "{\"some\": \"thing\", \"else\": 1}";
     test_with_data_eq(
         "function(input) { return input; }",
-        data1, data2,
+        &format!("assert.deepEqual(test_fun({}), {});", data1, data2)
     );
 }

@@ -4,6 +4,7 @@
 extern crate json;
 #[macro_use] extern crate nom;
 extern crate rustache;
+extern crate itertools;
 
 pub mod ir;
 pub use ir::{TypeContainer, WeakTypeContainer, Type, TypeData, ReferenceResolver, TypeVariant};

@@ -1,56 +1,52 @@
 use ::errors::*;
-use ::ir::{Type, TypeVariant, TypeData, TypeContainer};
-use ::ir::variant::{Variant, SimpleScalarVariant, ContainerVariant, ArrayVariant, UnionVariant};
+use ::ir::{TypeVariant, TypeData, TypeContainer};
+use ::ir::variant::{SimpleScalarVariant, ContainerVariant, ArrayVariant, UnionVariant};
 use super::*;
 use super::utils::*;
 use super::container_utils::*;
 
-pub fn generate_size_of(typ: TypeContainer) -> Result<Block> {
+pub fn generate_serialize(typ: TypeContainer) -> Result<Block> {
     let typ_inner = typ.borrow();
     codegen_for_type(&*typ_inner)
-        .size_of(&typ_inner.data)
+        .serialize(&typ_inner.data)
 }
 
-pub trait BaseSizeOf: TypeVariant {
-    fn size_of(&self, data: &TypeData) -> Result<Block>;
+pub trait BaseSerialize: TypeVariant {
+    fn serialize(&self, data: &TypeData) -> Result<Block>;
 }
 
-impl BaseSizeOf for SimpleScalarVariant {
-
-    fn size_of(&self, data: &TypeData) -> Result<Block> {
-        let mut ops: Vec<Operation> = Vec::new();
-
-        ops.push(Operation::AddCount(Expr::TypeCall {
-            typ: CallType::SizeOf,
-            type_name: data.name.clone().into(),
-            input: input_for(data).into(),
-        }));
-
-        Ok(Block(ops))
+impl BaseSerialize for SimpleScalarVariant {
+    fn serialize(&self, data: &TypeData) -> Result<Block> {
+        Ok(Block(vec![
+            Operation::Assign {
+                name: "offset".to_owned().into(),
+                value: Expr::TypeCall {
+                    typ: CallType::Serialize,
+                    type_name: data.name.clone().into(),
+                    input: input_for(data).into(),
+                },
+            }
+        ]))
     }
-
 }
 
-impl BaseSizeOf for ContainerVariant {
-
-    fn size_of(&self, data: &TypeData) -> Result<Block> {
+impl BaseSerialize for ContainerVariant {
+    fn serialize(&self, data: &TypeData) -> Result<Block> {
         let mut ops: Vec<Operation> = Vec::new();
 
         for (idx, field) in self.fields.iter().enumerate() {
             let child_typ = field.child.upgrade().unwrap();
 
             build_var_accessor(self, data, &mut ops, idx)?;
-            ops.push(Operation::Block(generate_size_of(child_typ)?));
+            ops.push(Operation::Block(generate_serialize(child_typ)?));
         }
 
         Ok(Block(ops))
     }
-
 }
 
-impl BaseSizeOf for ArrayVariant {
-
-    fn size_of(&self, data: &TypeData) -> Result<Block> {
+impl BaseSerialize for ArrayVariant {
+    fn serialize(&self, data: &TypeData) -> Result<Block> {
         let mut ops: Vec<Operation> = Vec::new();
 
         let ident = data.ident.unwrap();
@@ -62,17 +58,15 @@ impl BaseSizeOf for ArrayVariant {
             array: input_for(data).into(),
             index: index_var.clone().into(),
             typ: child_input_var.clone().into(),
-            block: generate_size_of(self.child.upgrade().unwrap())?,
+            block: generate_serialize(self.child.upgrade().unwrap())?,
         });
 
         Ok(Block(ops))
     }
-
 }
 
-impl BaseSizeOf for UnionVariant {
-
-    fn size_of(&self, data: &TypeData) -> Result<Block> {
+impl BaseSerialize for UnionVariant {
+    fn serialize(&self, data: &TypeData) -> Result<Block> {
         let mut ops: Vec<Operation> = Vec::new();
 
         let cases: Result<Vec<UnionTagCase>> = self.cases.iter().map(|case| {
@@ -81,7 +75,7 @@ impl BaseSizeOf for UnionVariant {
 
             let mut i_ops: Vec<Operation> = Vec::new();
 
-            let inner = generate_size_of(child_rc.clone())?;
+            let inner = generate_serialize(child_rc.clone())?;
             i_ops.push(Operation::Block(inner));
 
             Ok(UnionTagCase {
@@ -100,5 +94,4 @@ impl BaseSizeOf for UnionVariant {
 
         Ok(Block(ops))
     }
-
 }

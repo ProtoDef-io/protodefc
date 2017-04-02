@@ -1,4 +1,5 @@
 pub mod size_of;
+pub mod serialize;
 
 pub mod utils;
 pub mod container_utils;
@@ -72,11 +73,15 @@ pub struct UnionTagCase {
 #[derive(Debug)]
 pub enum CallType {
     SizeOf,
+    Serialize,
+    Deserialize,
 }
 impl CallType {
     pub fn short(&self) -> &str {
         match *self {
             CallType::SizeOf => "size_of",
+            CallType::Serialize => "serialize",
+            CallType::Deserialize => "deserialize",
         }
     }
 }
@@ -86,5 +91,23 @@ pub struct Var(pub String);
 impl From<String> for Var {
     fn from(input: String) -> Var {
         Var(input)
+    }
+}
+
+trait BaseCodegen : size_of::BaseSizeOf + serialize::BaseSerialize {}
+
+impl BaseCodegen for ::ir::variant::SimpleScalarVariant {}
+impl BaseCodegen for ::ir::variant::ContainerVariant {}
+impl BaseCodegen for ::ir::variant::ArrayVariant {}
+impl BaseCodegen for ::ir::variant::UnionVariant {}
+
+fn codegen_for_type<'a>(typ: &'a ::ir::Type) -> &'a BaseCodegen {
+    use ::ir::variant::Variant;
+    match typ.variant {
+        Variant::SimpleScalar(ref inner) => inner,
+        Variant::Container(ref inner) => inner,
+        Variant::Array(ref inner) => inner,
+        Variant::Union(ref inner) => inner,
+        _ => unimplemented!(),
     }
 }

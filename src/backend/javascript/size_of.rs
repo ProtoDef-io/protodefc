@@ -1,11 +1,7 @@
-use ::ir::{TypeContainer, TypeData};
+use ::ir::TypeContainer;
 use super::builder::Block;
 use ::backend::imperative_base as ib;
 use ::errors::*;
-
-fn input_for(data: &TypeData) -> String {
-    format!("type_input_{}", data.ident.unwrap())
-}
 
 pub fn generate_size_of(typ: TypeContainer) -> Result<Block> {
     let base = ib::size_of::generate_size_of(typ.clone())?;
@@ -15,7 +11,7 @@ pub fn generate_size_of(typ: TypeContainer) -> Result<Block> {
 
     {
         let typ_inner = typ.borrow();
-        ib.let_assign(input_for(&typ_inner.data), "input".into());
+        ib.let_assign(ib::utils::input_for(&typ_inner.data), "input".into());
     }
 
     ib.scope(super::ib_to_js::build_block(&base)?);

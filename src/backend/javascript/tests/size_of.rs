@@ -1,17 +1,50 @@
 use ::json_to_final_ast;
 use ::spec_type_to_final_ast;
 use ::backend::javascript::size_of::generate_size_of;
+use ::backend::javascript::serialize::generate_serialize;
 use super::super::builder::ToJavascript;
+use ::itertools::Itertools;
 
-fn test_size_of(spec: &str, data: &str, result: &str) {
+fn test_size_of(spec: &str, data: &str, bin_data: &[u8]) {
     let ir = spec_type_to_final_ast(spec).unwrap();
-    let size_of = generate_size_of(ir).unwrap();
 
-    let mut out = String::new();
-    size_of.to_javascript(&mut out, 0);
+    {
+        let size_of = generate_size_of(ir.clone()).unwrap();
 
-    println!("{}", out);
-    super::test_with_data_eq(&out, data, result);
+        let mut out = String::new();
+        size_of.to_javascript(&mut out, 0);
+
+        println!("{}", out);
+
+        let compare = format!("assert.deepEqual(test_fun({}), {});",
+                              data, bin_data.len());
+        super::test_with_data_eq(&out, &compare);
+    }
+
+    {
+        let serialize = generate_serialize(ir.clone()).unwrap();
+
+        let mut out = String::new();
+        serialize.to_javascript(&mut out, 0);
+
+        println!("{}", out);
+
+        let bin_data_arr: String = bin_data.iter()
+            .map(|val| format!("{}", val))
+            .join(",");
+
+        let compare = format!(
+            r#"
+var buffer = require("buffer");
+let buf = buffer.Buffer.alloc({}, 0);
+test_fun({}, buf, 0);
+console.log(buf);
+assert(buf.equals(buffer.Buffer.from([{}])));
+"#,
+            bin_data.len(), data, bin_data_arr);
+
+        super::test_with_data_eq(&out, &compare);
+    }
 }
 
 #[test]
@@ -21,7 +54,7 @@ fn simple_scalar() {
 def_type("test") => u8;
 "#,
         "0",
-        "1"
+        &[0]
     );
 }
 
@@ -35,7 +68,7 @@ def_type("test") => container {
 };
 "#,
         "{foo: 0, bar: 0}",
-        "2"
+        &[0, 0],
     );
 }
 
@@ -49,7 +82,7 @@ def_type("test") => container(virtual: "true") {
 };
 "#,
         "[1, 2, 3]",
-        "4"
+        &[3, 1, 2, 3]
     );
 }
 
@@ -71,12 +104,12 @@ def_type("test") => container(virtual: "true") {
     test_size_of(
         spec,
         "{tag: \"zero\", data: 0}",
-        "2",
+        &[0, 0],
     );
     test_size_of(
         spec,
         "{tag: \"one\", data: {woo: 0, hoo: 1}}",
-        "3"
+        &[1, 0, 1],
     );
 }
 
@@ -91,11 +124,12 @@ fn protodef_spec_tests() {
         let mut out = String::new();
         size_of.to_javascript(&mut out, 0);
 
-        for value in case.values {
-            super::test_with_data_eq(
-                &out,
-                &value.json_value,
-                &format!("{}", value.serialized.len()));
-        }
+        //for value in case.values {
+        //    super::test_with_data_eq(
+        //        &out,
+        //        &value.json_value,
+        //        &format!("{}", value.serialized.len()),
+        //    );
+        //}
     }
 }

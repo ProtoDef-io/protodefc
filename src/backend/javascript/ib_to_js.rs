@@ -84,8 +84,14 @@ fn build_expr(expr: &ib::Expr) -> Result<Expr> {
             num.clone(),
         ib::Expr::ContainerField { ref value, ref field } =>
             format!("{}[{:?}]", build_expr(value)?.0, field),
-        ib::Expr::TypeCall { ref typ, ref type_name, ref input } =>
-            format!("types[\"{}\"][\"{}\"]({})", type_name, typ.short(), input.0),
+        ib::Expr::TypeCall { typ: ib::CallType::SizeOf,
+                             ref type_name, ref input } =>
+            format!("types[\"{}\"][\"size_of\"]({})", type_name, input.0),
+        ib::Expr::TypeCall { typ: ib::CallType::Serialize,
+                             ref type_name, ref input } =>
+            format!("types[\"{}\"][\"serialize\"]({}, buffer, offset)",
+                    type_name, input.0),
+        _ => unimplemented!(),
     };
     Ok(res.into())
 }
