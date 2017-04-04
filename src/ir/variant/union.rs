@@ -2,6 +2,7 @@ use ::{TypeVariant, TypeData, Type, WeakTypeContainer, Result, TypeContainer, Co
 use ::ir::TargetType;
 use ::ir::variant::{Variant, VariantType};
 use ::FieldReference;
+use ::context::compilation_unit::{CompilationUnit, TypePath};
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -26,6 +27,7 @@ pub struct UnionCase {
 
 impl TypeVariant for UnionVariant {
     default_resolve_child_name_impl!();
+    default_resolve_on_context!();
 
     fn has_property(&self, _data: &TypeData, name: &str) -> Option<TargetType> {
         // TODO: Infer type
@@ -48,7 +50,7 @@ impl TypeVariant for UnionVariant {
 
         self.match_field = Some(resolver(self, data, &self.match_field_ref)?);
 
-        let match_field = self.match_field.clone().unwrap().upgrade().unwrap();
+        let match_field = self.match_field.clone().unwrap().upgrade();
         let match_field_inner = match_field.borrow();
         let match_field_type = match_field_inner.variant.to_variant()
             .get_result_type(&match_field_inner.data);
@@ -95,7 +97,7 @@ impl UnionVariantBuilder {
                 variant.cases.push(UnionCase {
                     match_val_str: match_val_str,
                     case_name: case_name,
-                    child: Rc::downgrade(&child),
+                    child: child.downgrade(),
                 });
             }
             _ => unreachable!(),
@@ -104,7 +106,7 @@ impl UnionVariantBuilder {
     }
 
     pub fn build(self) -> ::std::result::Result<TypeContainer, String> {
-        Ok(Rc::new(RefCell::new(self.typ)))
+        Ok(TypeContainer::new(self.typ))
     }
 
 }

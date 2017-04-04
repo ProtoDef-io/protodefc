@@ -1,6 +1,7 @@
 use ::{TypeVariant, TypeData, Type, WeakTypeContainer, Result, TypeContainer, CompilerError};
 use super::{Variant, VariantType};
 use ::FieldPropertyReference;
+use ::context::compilation_unit::{CompilationUnit, TypePath};
 use ::ir::TargetType;
 
 use std::rc::Rc;
@@ -31,6 +32,7 @@ impl TypeVariant for ContainerVariant {
 
     default_has_property_impl!();
     default_get_result_type_impl!();
+    default_resolve_on_context!();
 
     fn do_resolve_references(&mut self,
                              data: &mut TypeData,
@@ -44,7 +46,7 @@ impl TypeVariant for ContainerVariant {
                 ContainerFieldType::Virtual { ref property } => {
                     let prop_node = resolver(self, data, &property.reference)?;
 
-                    let prop_node_u = prop_node.upgrade().unwrap();
+                    let prop_node_u = prop_node.upgrade();
                     let prop_node_ui = prop_node_u.borrow();
 
                     let prop_valid = prop_node_ui.variant
@@ -150,7 +152,7 @@ impl ContainerVariantBuilder {
             Variant::Container(ref mut variant) => {
                 variant.fields.push(ContainerField {
                     name: name,
-                    child: Rc::downgrade(&typ),
+                    child: typ.downgrade(),
                     child_index: idx,
                     field_type: container_type,
                 });
@@ -163,6 +165,6 @@ impl ContainerVariantBuilder {
         if self.virt && self.num_non_virt_fields != 1 {
             bail!("virtual container must have exactly 1 non-virtual field");
         }
-        Ok(Rc::new(RefCell::new(self.typ)))
+        Ok(TypeContainer::new(self.typ))
     }
 }

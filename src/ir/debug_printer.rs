@@ -1,3 +1,5 @@
+use ::TypeContainer;
+
 use std::fmt;
 use std::fmt::Debug;
 use super::Type;
@@ -21,7 +23,7 @@ pub fn print(typ: &Type, fmt: &mut fmt::Formatter, depth: u64) -> Result<(), fmt
         fmt.write_str(" ) {\n")?;
 
         for child in &typ.data.children {
-            match child.try_borrow() {
+            match child.0.try_borrow() {
                 Ok(borrow) => {
                     print(&borrow, fmt, depth+1)?;
                 }
@@ -41,6 +43,20 @@ impl fmt::Debug for Type {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         fmt.write_str("protodefc::IR {\n")?;
         print(self, fmt, 1)?;
+        fmt.write_str("}")?;
+        Ok(())
+    }
+}
+
+impl fmt::Debug for TypeContainer {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        fmt.write_str("protodefc::IR {\n")?;
+        match self.0.try_borrow() {
+            Ok(borrow) =>
+                print(&borrow, fmt, 1)?,
+            Err(_) =>
+                fmt.write_str("<borrowed>")?,
+        }
         fmt.write_str("}")?;
         Ok(())
     }

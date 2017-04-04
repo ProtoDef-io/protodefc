@@ -2,6 +2,7 @@ use ::{TypeVariant, TypeData, WeakTypeContainer, Result};
 use ::ir::TargetType;
 use ::FieldReference;
 use super::VariantType;
+use ::context::compilation_unit::{CompilationUnit, TypePath};
 
 #[derive(Debug)]
 pub struct SizedBufferVariant {
@@ -17,4 +18,5 @@ impl TypeVariant for SizedBufferVariant {
     default_has_property_impl!();
     default_resolve_references!();
     default_get_result_type_impl!();
+    default_resolve_on_context!();
 }

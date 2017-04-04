@@ -1,4 +1,5 @@
 use super::{TypeVariant, TypeData};
+use ::context::compilation_unit::TypePath;
 
 macro_rules! default_resolve_child_name_impl {
     () => {
@@ -28,6 +29,14 @@ macro_rules! default_resolve_references {
     () => {
         fn do_resolve_references(&mut self, _data: &mut TypeData,
                                  _resolver: &::ReferenceResolver) -> Result<()> {
+            Ok(())
+        }
+    }
+}
+macro_rules! default_resolve_on_context {
+    () => {
+        fn resolve_on_context(&self, _data: &TypeData, _current_path: &TypePath,
+                              _context: &CompilationUnit) -> Result<()> {
             Ok(())
         }
     }
@@ -117,6 +126,6 @@ pub enum VariantType {
     Union,
     SizedBuffer,
     TerminatedBuffer,
-    SimpleScalar(String),
+    SimpleScalar(TypePath),
     Error,
 }

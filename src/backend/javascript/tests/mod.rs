@@ -1,4 +1,5 @@
-mod size_of;
+mod spec_single_type;
+mod spec_file;
 
 use std::process::Command;
 

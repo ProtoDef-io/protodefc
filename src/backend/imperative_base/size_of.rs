@@ -20,11 +20,14 @@ impl BaseSizeOf for SimpleScalarVariant {
     fn size_of(&self, data: &TypeData) -> Result<Block> {
         let mut ops: Vec<Operation> = Vec::new();
 
-        ops.push(Operation::AddCount(Expr::TypeCall {
-            typ: CallType::SizeOf,
-            type_name: data.name.clone().into(),
+        ops.push(Operation::TypeCall {
             input: input_for(data).into(),
-        }));
+            output: "size".to_owned().into(),
+            typ: CallType::SizeOf,
+            type_name: data.name.clone(),
+        });
+
+        ops.push(Operation::AddCount(Expr::Var("size".to_owned().into())));
 
         Ok(Block(ops))
     }
@@ -37,7 +40,7 @@ impl BaseSizeOf for ContainerVariant {
         let mut ops: Vec<Operation> = Vec::new();
 
         for (idx, field) in self.fields.iter().enumerate() {
-            let child_typ = field.child.upgrade().unwrap();
+            let child_typ = field.child.upgrade();
 
             build_var_accessor(self, data, &mut ops, idx)?;
             ops.push(Operation::Block(generate_size_of(child_typ)?));
@@ -56,13 +59,13 @@ impl BaseSizeOf for ArrayVariant {
         let ident = data.ident.unwrap();
         let index_var = format!("array_{}_index", ident);
 
-        let child_input_var = input_for_type(self.child.upgrade().unwrap());
+        let child_input_var = input_for_type(self.child.upgrade());
 
         ops.push(Operation::ForEachArray {
             array: input_for(data).into(),
             index: index_var.clone().into(),
             typ: child_input_var.clone().into(),
-            block: generate_size_of(self.child.upgrade().unwrap())?,
+            block: generate_size_of(self.child.upgrade())?,
         });
 
         Ok(Block(ops))
@@ -76,7 +79,7 @@ impl BaseSizeOf for UnionVariant {
         let mut ops: Vec<Operation> = Vec::new();
 
         let cases: Result<Vec<UnionTagCase>> = self.cases.iter().map(|case| {
-            let child_rc = case.child.upgrade().unwrap();
+            let child_rc = case.child.upgrade();
             let child_inner = child_rc.borrow();
 
             let mut i_ops: Vec<Operation> = Vec::new();

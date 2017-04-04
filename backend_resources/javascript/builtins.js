@@ -5,12 +5,18 @@
             buffer.writeInt8(input, offset);
             return offset+1;
         },
+        deserialize: function(buffer, offset) {
+            return [buffer.readInt8(offset), offset+1];
+        },
     },
     u8: {
         size_of: function(input) { return 1; },
         serialize: function(input, buffer, offset) {
             buffer.writeInt8(input, offset);
             return offset+1;
+        },
+        deserialize: function(buffer, offset) {
+            return [buffer.readInt8(offset), offset+1];
         },
     },
     i16: {
@@ -19,12 +25,18 @@
             buffer.writeInt16BE(input, offset);
             return offset+2;
         },
+        deserialize: function(buffer, offset) {
+            return [buffer.readInt16BE(offset), offset+2];
+        },
     },
     u16: {
         size_of: function(input) { return 2; },
         serialize: function(input, buffer, offset) {
             buffer.writeUInt16BE(input, offset);
             return offset+2;
+        },
+        deserialize: function(buffer, offset) {
+            return [buffer.readUInt16BE(offset), offset+2];
         },
     },
     i32: {
@@ -33,12 +45,18 @@
             buffer.writeInt32BE(input, offset);
             return offset+4;
         },
+        deserialize: function(buffer, offset) {
+            return [buffer.readInt32BE(offset), offset+4];
+        },
     },
     u32: {
         size_of: function(input) { return 4; },
         serialize: function(input, buffer, offset) {
             buffer.writeUInt32BE(input, offset);
             return offset+4;
+        },
+        deserialize: function(buffer, offset) {
+            return [buffer.readUInt32BE(offset), offset+4];
         },
     },
     i64: {
@@ -47,12 +65,18 @@
             buffer.writeInt64BE(input, offset);
             return offset+8;
         },
+        deserialize: function(buffer, offset) {
+            return [buffer.readInt64BE(offset), offset+8];
+        },
     },
     u64: {
         size_of: function(input) { return 8; },
         serialize: function(input, buffer, offset) {
             buffer.writeUInt64BE(input, offset);
             return offset+8;
+        },
+        deserialize: function(buffer, offset) {
+            return [buffer.readUInt64BE(offset), offset+8];
         },
     },
     varint: {

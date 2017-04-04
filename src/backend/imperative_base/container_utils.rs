@@ -7,7 +7,7 @@ use super::utils::*;
 pub fn find_field_index(variant: &ContainerVariant, property: &FieldPropertyReference)
                         -> usize {
     let property_field_ident = {
-        let rc = property.reference_node.clone().unwrap().upgrade().unwrap();
+        let rc = property.reference_node.clone().unwrap().upgrade();
         let rc_inner = rc.borrow();
         rc_inner.data.ident.unwrap()
     };
@@ -15,7 +15,7 @@ pub fn find_field_index(variant: &ContainerVariant, property: &FieldPropertyRefe
     let (idx, _) = variant.fields
         .iter().enumerate()
         .find(|&(_, f)| {
-            let rc = f.child.clone().upgrade().unwrap();
+            let rc = f.child.clone().upgrade();
             let rc_inner = rc.borrow();
             rc_inner.data.ident.unwrap() == property_field_ident
         })
@@ -28,7 +28,7 @@ pub fn build_var_accessor(variant: &ContainerVariant, data: &TypeData,
                       block: &mut Vec<Operation>, field_num: usize)
                       -> Result<()> {
     let field: &ContainerField = &variant.fields[field_num];
-    let field_input_var = input_for_type(field.child.upgrade().unwrap());
+    let field_input_var = input_for_type(field.child.upgrade());
 
     build_var_accessor_inner(variant, data, block, field_num, &field_input_var)
 }
@@ -59,8 +59,7 @@ fn build_var_accessor_inner(variant: &ContainerVariant, data: &TypeData,
             }
         }
         ContainerFieldType::Virtual { ref property } => {
-            let ref_node_rc = property.reference_node.clone().unwrap()
-                .upgrade().unwrap();
+            let ref_node_rc = property.reference_node.clone().unwrap().upgrade();
             let ref_node = ref_node_rc.borrow();
 
             if property.reference.up == 0 {

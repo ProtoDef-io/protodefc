@@ -3,6 +3,7 @@ use std::cell::RefCell;
 use super::{Variant, VariantType};
 use ::ir::{Type, TypeVariant, TypeData, Result, WeakTypeContainer, TypeContainer};
 use ::ir::TargetType;
+use ::context::compilation_unit::{CompilationUnit, TypePath};
 
 /// This is a simple terminal scalar.
 ///
@@ -15,6 +16,7 @@ use ::ir::TargetType;
 pub struct SimpleScalarVariant {
     pub target_type: Option<TargetType>,
 }
+
 impl TypeVariant for SimpleScalarVariant {
     fn get_type(&self, data: &TypeData) -> VariantType {
         VariantType::SimpleScalar(data.name.clone())
@@ -25,21 +27,26 @@ impl TypeVariant for SimpleScalarVariant {
     default_resolve_child_name_impl!();
     default_has_property_impl!();
     default_resolve_references!();
+    default_resolve_on_context!();
 }
+
 impl SimpleScalarVariant {
-    pub fn new(name: String) -> TypeContainer {
-        SimpleScalarVariant::with_target_type(name, None)
+
+    pub fn new(path: TypePath) -> TypeContainer {
+        SimpleScalarVariant::with_target_type(path, None)
     }
-    pub fn with_target_type(name: String, target_type: Option<TargetType>)
+
+    pub fn with_target_type(path: TypePath, target_type: Option<TargetType>)
                             -> TypeContainer {
         let mut data = TypeData::default();
-        data.name = name;
+        data.name = path;
 
-        Rc::new(RefCell::new(Type {
+        TypeContainer::new(Type {
             data: data,
             variant: Variant::SimpleScalar(SimpleScalarVariant {
                 target_type: target_type,
             }),
-        }))
+        })
     }
+
 }

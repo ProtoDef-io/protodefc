@@ -58,7 +58,7 @@ fn ir_to_spec_inner(typ: TypeContainer) -> Statement {
                             statements: inner.fields
                                 .iter()
                                 .map(|field| {
-                                    let child = field.child.upgrade().unwrap();
+                                    let child = field.child.upgrade();
                                     let mut statement = ir_to_spec_inner(child);
 
                                     statement.items.insert(
@@ -97,13 +97,13 @@ mod tests {
     use self::protocol_spec::ast::printer::print;
     use self::protocol_spec::ast::Block;
 
-    #[test]
-    fn basic_container() {
-        let json = "[\"container\", [{\"name\": \"foo\", \"type\": \"u8\"}]]";
-        let ast = ::json_to_final_ast(json).unwrap();
-        let spec_ast = ir_to_spec("test_type".into(), ast);
-        let spec = print(&Block { statements: vec![spec_ast] });
-        println!("{}", spec);
-    }
+    //#[test]
+    //fn basic_container() {
+    //    let json = "[\"container\", [{\"name\": \"foo\", \"type\": \"u8\"}]]";
+    //    let ast = ::json_to_final_ast(json).unwrap();
+    //    let spec_ast = ir_to_spec("test_type".into(), ast);
+    //    let spec = print(&Block { statements: vec![spec_ast] });
+    //    println!("{}", spec);
+    //}
 
 }

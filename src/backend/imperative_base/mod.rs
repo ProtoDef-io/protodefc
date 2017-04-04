@@ -1,10 +1,13 @@
 pub mod size_of;
 pub mod serialize;
+pub mod deserialize;
 
 pub mod utils;
 pub mod container_utils;
 
 mod tests;
+
+use ::context::compilation_unit::TypePath;
 
 #[derive(Debug)]
 pub struct Block(pub Vec<Operation>);
@@ -34,6 +37,29 @@ pub enum Operation {
         operation: MapOperation,
     },
     Block(Block),
+    ConstructContainer {
+        output: Var,
+        fields: Vec<(String, Var)>,
+    },
+    ConstructArray {
+        count: Var,
+        ident: u64,
+        item_var: Var,
+        block: Block,
+        output: Var,
+    },
+    ConstructUnion {
+        union_name: String,
+        union_tag: String,
+        output: Var,
+        input: Var,
+    },
+    TypeCall {
+        typ: CallType,
+        type_name: TypePath,
+        input: Var,
+        output: Var,
+    },
 }
 
 #[derive(Debug)]
@@ -50,23 +76,25 @@ pub enum Expr {
         value: Box<Expr>,
         field: String,
     },
-    TypeCall {
-        typ: CallType,
-        type_name: String,
-        input: Var,
-    },
 }
 
 #[derive(Debug)]
 pub enum MapOperation {
     ArrayLength,
     UnionTagToExpr(Vec<UnionTagCase>),
+    LiteralToExpr(Vec<LiteralCase>),
 }
 
 #[derive(Debug)]
 pub struct UnionTagCase {
     pub variant_name: String,
     pub variant_var: Option<Var>,
+    pub block: Block,
+}
+
+#[derive(Debug)]
+pub struct LiteralCase {
+    pub value: Literal,
     pub block: Block,
 }
 
@@ -94,7 +122,7 @@ impl From<String> for Var {
     }
 }
 
-trait BaseCodegen : size_of::BaseSizeOf + serialize::BaseSerialize {}
+trait BaseCodegen : size_of::BaseSizeOf + serialize::BaseSerialize + deserialize::BaseDeserialize {}
 
 impl BaseCodegen for ::ir::variant::SimpleScalarVariant {}
 impl BaseCodegen for ::ir::variant::ContainerVariant {}

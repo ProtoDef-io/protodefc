@@ -1,4 +1,5 @@
 use ::ir::{TypeVariant, TypeData, Result, WeakTypeContainer};
+use ::context::compilation_unit::{CompilationUnit, TypePath};
 use ::ir::TargetType;
 use super::VariantType;
 
@@ -16,4 +17,5 @@ impl TypeVariant for ErrorVariant {
     default_has_property_impl!();
     default_resolve_references!();
     default_get_result_type_impl!();
+    default_resolve_on_context!();
 }

@@ -1,6 +1,7 @@
 use ::{TypeVariant, TypeData, Type, WeakTypeContainer, Result, TypeContainer};
 use ::ir::TargetType;
 use ::FieldReference;
+use ::context::compilation_unit::{CompilationUnit, TypePath};
 use super::{Variant, VariantType};
 
 use std::rc::Rc;
@@ -18,6 +19,7 @@ pub struct ArrayVariant {
 impl TypeVariant for ArrayVariant {
     default_resolve_child_name_impl!();
     default_get_result_type_impl!();
+    default_resolve_on_context!();
 
     fn get_type(&self, _data: &TypeData) -> VariantType {
         VariantType::Array
@@ -35,7 +37,7 @@ impl TypeVariant for ArrayVariant {
                              resolver: &::ReferenceResolver) -> Result<()> {
         self.count = Some(resolver(self, data, &self.count_path)?);
 
-        let count = self.count.clone().unwrap().upgrade().unwrap();
+        let count = self.count.clone().unwrap().upgrade();
         let count_inner = count.borrow();
         let count_type = count_inner.variant.to_variant()
             .get_result_type(&count_inner.data);
@@ -51,19 +53,19 @@ impl ArrayVariant {
 
     pub fn new(count_ref: FieldReference, child: TypeContainer) -> TypeContainer {
         let mut data = TypeData::default();
-        data.name = "array".into();
+        data.name = TypePath::with_no_ns("array".to_owned());
         data.children.push(child.clone());
 
-        Rc::new(RefCell::new(Type {
+        TypeContainer::new(Type {
             variant: Variant::Array(ArrayVariant {
                 count: None,
                 count_path: count_ref,
 
-                child: Rc::downgrade(&child),
+                child: child.downgrade(),
                 child_index: 0,
             }),
             data: data,
-        }))
+        })
     }
 
 }

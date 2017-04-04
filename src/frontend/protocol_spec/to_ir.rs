@@ -7,6 +7,7 @@ use ::ir::variant::{ContainerVariant, ContainerVariantBuilder,
 
 use super::ast::{Statement, Value, Ident};
 use ::errors::*;
+use ::context::compilation_unit::TypePath;
 
 pub fn type_def_to_ir(stmt: &Statement) -> Result<TypeContainer> {
     let item = stmt.items[0].item().unwrap();
@@ -144,17 +145,16 @@ impl ValuesToIr for SimpleScalarVariant {
         ensure!(scalar_item.is_name_only(),
                 "simple scalars takes no arguments and no block");
 
-        // TODO
-        match scalar_item.name {
-            Ident::Simple(ref string) => {
-                let target_type = match string.as_ref() {
-                    "u8" | "i8" => Some(TargetType::Integer),
-                    _ => None,
-                };
-                Ok(SimpleScalarVariant::with_target_type(string.clone(), target_type))
-            }
-            _ => unimplemented!(),
-        }
+        let path = match scalar_item.name {
+            Ident::Simple(ref string) =>
+                TypePath::with_no_ns(string.to_owned()),
+            Ident::RootNs(ref ns) =>
+                TypePath::with_ns(
+                    ns[..(ns.len()-2)].into(),
+                    ns.last().unwrap().clone()),
+        };
+
+        Ok(SimpleScalarVariant::new(path))
     }
 }
 

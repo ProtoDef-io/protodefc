@@ -10,6 +10,8 @@ pub mod ir;
 pub use ir::{TypeContainer, WeakTypeContainer, Type, TypeData, ReferenceResolver, TypeVariant};
 pub use ir::{FieldPropertyReference, FieldReference};
 
+pub mod context;
+
 pub mod backend;
 pub mod frontend;
 pub mod pass;
@@ -19,19 +21,20 @@ pub mod test_harness;
 pub mod errors;
 use errors::*;
 
-pub fn run_passes(ir: &mut TypeContainer) -> Result<()> {
-    use ::pass::CompilePass;
-    ::pass::assign_parent::AssignParentPass::run(ir)?;
-    ::pass::assign_ident::AssignIdentPass::run(ir)?;
-    ::pass::resolve_reference::ResolveReferencePass::run(ir)?;
+pub use context::compilation_unit::CompilationUnit;
+
+pub fn run_passes(ir: &TypeContainer) -> Result<()> {
+    ::pass::assign_parent::run(ir)?;
+    ::pass::assign_ident::run(ir)?;
+    ::pass::resolve_reference::run(ir)?;
     Ok(())
 }
 
-pub fn json_to_final_ast(json: &str) -> Result<TypeContainer> {
-    let mut tree = ::frontend::protocol_json::from_json(&json)?;
-    run_passes(&mut tree)?;
-    Ok(tree)
-}
+//pub fn json_to_final_ast(json: &str) -> Result<TypeContainer> {
+//    let mut tree = ::frontend::protocol_json::from_json(&json)?;
+//    run_passes(&mut tree)?;
+//    Ok(tree)
+//}
 
 pub fn spec_type_to_final_ast(spec: &str) -> Result<TypeContainer> {
     let ast = ::frontend::protocol_spec::parse(spec)?;
@@ -40,18 +43,24 @@ pub fn spec_type_to_final_ast(spec: &str) -> Result<TypeContainer> {
     Ok(ir)
 }
 
+pub fn spec_to_final_compilation_unit(spec: &str) -> Result<CompilationUnit> {
+    let mut unit = ::frontend::protocol_spec::to_compilation_unit(spec)?;
+    unit.compile_types()?;
+    Ok(unit)
+}
+
 #[cfg(test)]
 mod test {
 
-    #[test]
-    fn test_from_json() {
-        let input = "[\"container\", [{\"name\": \"foo\", \"type\": \"i8\"}]]";
-        let res = ::json_to_final_ast(&input);
-        match res {
-            Ok(r) => println!("Ok: {:?}", r),
-            _ => panic!(),
-        }
-    }
+    //#[test]
+    //fn test_from_json() {
+    //    let input = "[\"container\", [{\"name\": \"foo\", \"type\": \"i8\"}]]";
+    //    let res = ::json_to_final_ast(&input);
+    //    match res {
+    //        Ok(r) => println!("Ok: {:?}", r),
+    //        _ => panic!(),
+    //    }
+    //}
 
 }
 

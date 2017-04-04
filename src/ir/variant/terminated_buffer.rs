@@ -1,6 +1,7 @@
 use ::{TypeVariant, TypeData, WeakTypeContainer, Result};
 use ::ir::TargetType;
 use super::VariantType;
+use ::context::compilation_unit::{CompilationUnit, TypePath};
 
 #[derive(Debug)]
 pub struct TerminatedBufferVariant {
@@ -15,4 +16,5 @@ impl TypeVariant for TerminatedBufferVariant {
     default_has_property_impl!();
     default_resolve_references!();
     default_get_result_type_impl!();
+    default_resolve_on_context!();
 }

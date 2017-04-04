@@ -3,9 +3,9 @@ use ::FieldReference;
 
 error_chain! {
     links {
-        JsonParseError(
-            ::frontend::protocol_json::Error,
-            ::frontend::protocol_json::ErrorKind);
+        //JsonParseError(
+        //    ::frontend::protocol_json::Error,
+        //    ::frontend::protocol_json::ErrorKind);
     }
 
     errors {

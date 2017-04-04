@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use ::FieldReference;
+use ::context::compilation_unit::NSPath;
 
 pub mod parser;
 pub mod printer;
@@ -43,7 +44,6 @@ pub struct ItemArg {
 pub enum Ident {
     Simple(String),
     RootNs(Vec<String>),
-    // Nc(Vec<String>),
 }
 
 // Helpers
