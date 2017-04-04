@@ -7,7 +7,7 @@ pub mod container_utils;
 
 mod tests;
 
-use ::context::compilation_unit::TypePath;
+use ::context::compilation_unit::{TypePath, NamedTypeContainer};
 
 #[derive(Debug)]
 pub struct Block(pub Vec<Operation>);
@@ -56,6 +56,7 @@ pub enum Operation {
     },
     TypeCall {
         typ: CallType,
+        named_type: NamedTypeContainer,
         type_name: TypePath,
         input: Var,
         output: Var,
@@ -98,7 +99,7 @@ pub struct LiteralCase {
     pub block: Block,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum CallType {
     SizeOf,
     Serialize,

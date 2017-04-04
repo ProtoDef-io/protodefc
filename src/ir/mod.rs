@@ -1,5 +1,3 @@
-use std::cell::{RefCell, Ref, RefMut};
-use std::rc::{Rc, Weak};
 use std::fmt::Debug;
 use std::any::Any;
 
@@ -20,32 +18,10 @@ pub use self::target_type::TargetType;
 
 use ::context::compilation_unit::{CompilationUnit, TypePath};
 
-#[derive(Clone)]
-pub struct TypeContainer(Rc<RefCell<Type>>);
-impl TypeContainer {
-    pub fn new(typ: Type) -> TypeContainer {
-        TypeContainer(Rc::new(RefCell::new(typ)))
-    }
+use ::rc_container::{Container, WeakContainer};
 
-    pub fn borrow(&self) -> Ref<Type> {
-        self.0.borrow()
-    }
-    pub fn borrow_mut(&self) -> RefMut<Type> {
-        self.0.borrow_mut()
-    }
-
-    pub fn downgrade(&self) -> WeakTypeContainer {
-        WeakTypeContainer(Rc::downgrade(&self.0))
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct WeakTypeContainer(Weak<RefCell<Type>>);
-impl WeakTypeContainer {
-    pub fn upgrade(&self) -> TypeContainer {
-        TypeContainer(self.0.upgrade().unwrap())
-    }
-}
+pub type TypeContainer = Container<Type>;
+pub type WeakTypeContainer = WeakContainer<Type>;
 
 //pub type TypeContainer = Rc<RefCell<Type>>;
 //pub type WeakTypeContainer = Weak<RefCell<Type>>;
@@ -108,12 +84,21 @@ pub trait TypeVariant: Debug + Any {
     fn resolve_child_name(&self, data: &TypeData, name: &str)
                           -> Result<WeakTypeContainer>;
 
-    fn do_resolve_references(&mut self, data: &mut TypeData,
-                             resolver: &ReferenceResolver) -> Result<()>;
+    //fn do_resolve_references(&mut self, data: &mut TypeData,
+    //                         resolver: &ReferenceResolver) -> Result<()>;
 
     fn get_type(&self, data: &TypeData) -> VariantType;
 
-    fn resolve_on_context(&self, data: &TypeData, current_path: &TypePath,
-                          context: &CompilationUnit) -> Result<()>;
+    //fn resolve_on_context(&mut self, data: &TypeData, current_path: &TypePath,
+    //                      context: &CompilationUnit) -> Result<()>;
 
+    fn do_compile_pass(&mut self, data: &mut TypeData, pass: &mut CompilePass)
+                       -> Result<()>;
+
+}
+
+pub enum CompilePass<'a> {
+    ResolveReferencedTypes(&'a TypePath, &'a CompilationUnit),
+    ResolveInternalReferences(&'a ReferenceResolver),
+    PropagateTypes { has_changed: &'a mut bool },
 }

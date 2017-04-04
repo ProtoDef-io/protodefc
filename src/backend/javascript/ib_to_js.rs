@@ -124,27 +124,43 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                 );
             }
             ib::Operation::TypeCall { ref input, ref output, ref type_name,
-                                      typ: ib::CallType::SizeOf } => {
-                let res = format!("types[\"{}\"][\"size_of\"]({})",
-                                  type_name, input.0);
-                b.var_assign(output.0.clone(), res.into());
-            }
-            ib::Operation::TypeCall { ref input, ref output, ref type_name,
-                                      typ: ib::CallType::Serialize } => {
-                let res = format!("types[\"{}\"][\"serialize\"]({}, buffer, offset)",
-                                  type_name, input.0);
-                b.var_assign("offset".to_owned(), res.into());
-            }
-            ib::Operation::TypeCall { ref input, ref output, ref type_name,
-                                      typ: ib::CallType::Deserialize } => {
-                let res = format!("types[\"{}\"][\"deserialize\"]({}, offset)",
-                                  type_name, input.0);
-                b.var_assign(format!("[{}, offset]", output.0), res.into());
+                                      typ, ref named_type } => {
+                let named_type_inner = named_type.borrow();
+
+                let call = call_for(typ, named_type_inner.type_id, &input.0);
+                let assign_var = assign_target_for(typ, &output.0);
+
+                b.var_assign(assign_var, call.into());
             }
         }
     }
 
     Ok(b)
+}
+
+fn call_for(typ: ib::CallType, type_id: u64, input: &str) -> String {
+    match typ {
+        ib::CallType::SizeOf =>
+            format!("type_{}_size_of({})",
+                    type_id, input),
+        ib::CallType::Serialize =>
+            format!("type_{}_serialize({}, buffer, offset)",
+                    type_id, input),
+        ib::CallType::Deserialize =>
+            format!("type_{}_deserialize({}, offset)",
+                    type_id, input),
+    }
+}
+
+fn assign_target_for(typ: ib::CallType, output: &str) -> String {
+    match typ {
+        ib::CallType::SizeOf =>
+            format!("{}", output),
+        ib::CallType::Serialize =>
+            format!("offset"),
+        ib::CallType::Deserialize =>
+            format!("[{}, offset]", output),
+    }
 }
 
 fn build_expr(expr: &ib::Expr) -> Result<Expr> {

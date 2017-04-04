@@ -3,7 +3,7 @@ use super::builder::Block;
 use ::backend::imperative_base as ib;
 use ::errors::*;
 
-pub fn generate_serialize(typ: TypeContainer) -> Result<Block> {
+pub fn generate_serialize(fun_name: String, typ: TypeContainer) -> Result<Block> {
     let base = ib::serialize::generate_serialize(typ.clone())?;
 
     let mut ib = Block::new();
@@ -18,7 +18,7 @@ pub fn generate_serialize(typ: TypeContainer) -> Result<Block> {
 
     let mut b = Block::new();
     b.decl_fun(
-        "".into(),
+        fun_name,
         vec!["input".into(), "buffer".into(), "offset".into()],
         ib
     );

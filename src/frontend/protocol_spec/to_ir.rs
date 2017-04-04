@@ -11,7 +11,7 @@ use ::context::compilation_unit::TypePath;
 
 pub fn type_def_to_ir(stmt: &Statement) -> Result<TypeContainer> {
     let item = stmt.items[0].item().unwrap();
-    if item.name.simple_str() != Some("def_type") {
+    if item.name.simple_str() != Some("def") {
         unreachable!();
     }
     type_values_to_ir(&stmt.items[1..])
@@ -31,11 +31,10 @@ fn type_values_to_ir(items: &[Value]) -> Result<TypeContainer> {
                 "container" => ContainerVariant::values_to_ir(items),
                 "array" => ArrayVariant::values_to_ir(items),
                 "union" => UnionVariant::values_to_ir(items),
-                "u8" => SimpleScalarVariant::values_to_ir(items),
-                _ => unimplemented!(),
-            }.chain_err(|| format!("inside '{}' node", s))
+                _ => SimpleScalarVariant::values_to_ir(items),
+            }
         }
-        _ => unimplemented!(),
+        _ => SimpleScalarVariant::values_to_ir(items),
     }
 }
 
@@ -150,7 +149,7 @@ impl ValuesToIr for SimpleScalarVariant {
                 TypePath::with_no_ns(string.to_owned()),
             Ident::RootNs(ref ns) =>
                 TypePath::with_ns(
-                    ns[..(ns.len()-2)].into(),
+                    ns[..(ns.len()-1)].into(),
                     ns.last().unwrap().clone()),
         };
 
@@ -241,7 +240,7 @@ mod tests {
     #[test]
     fn simple_spec() {
         let spec = r#"
-def_type("test") => container {
+def("test") => container {
     field("test_ffield") => u8;
     virtual_field("something", ref: "test_field", prop: "nonexistent") => u8;
 };

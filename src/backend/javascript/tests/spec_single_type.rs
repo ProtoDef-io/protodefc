@@ -1,80 +1,114 @@
 use ::spec_type_to_final_ast;
+use ::spec_to_final_compilation_unit;
 use ::backend::javascript::size_of::generate_size_of;
 use ::backend::javascript::serialize::generate_serialize;
 use ::backend::javascript::deserialize::generate_deserialize;
+use ::backend::javascript::cu_to_js::generate_compilation_unit;
 use super::super::builder::ToJavascript;
 use ::itertools::Itertools;
 
 fn test_single(spec: &str, data: &str, bin_data: &[u8]) {
-    let ir = spec_type_to_final_ast(spec).unwrap();
+    let cu = spec_to_final_compilation_unit(spec).unwrap();
 
     let bin_data_arr: String = bin_data.iter()
         .map(|val| format!("{}", val))
         .join(",");
 
-    {
-        let size_of = generate_size_of(ir.clone()).unwrap();
+    let block = generate_compilation_unit(cu).unwrap();
+    let mut out = String::new();
+    block.to_javascript(&mut out, 0);
 
-        let mut out = String::new();
-        size_of.to_javascript(&mut out, 0);
-
-        println!("{}", out);
-
-        let compare = format!("assert.deepEqual(test_fun({}), {});",
-                              data, bin_data.len());
-        super::test_with_data_eq(&out, &compare);
-    }
-
-    {
-        let serialize = generate_serialize(ir.clone()).unwrap();
-
-        let mut out = String::new();
-        serialize.to_javascript(&mut out, 0);
-
-        println!("{}", out);
-
-        let compare = format!(
-            r#"
-var buffer = require("buffer");
-let buf = buffer.Buffer.alloc({}, 0);
-test_fun({}, buf, 0);
-console.log(buf);
-assert(buf.equals(buffer.Buffer.from([{}])));
-"#,
-            bin_data.len(), data, bin_data_arr
-        );
-
-        super::test_with_data_eq(&out, &compare);
-    }
-
-    {
-        let deserialize = generate_deserialize(ir.clone()).unwrap();
-
-        let mut out = String::new();
-        deserialize.to_javascript(&mut out, 0);
-
-        println!("{}", out);
-
-        let compare = format!(
+    println!("{}", out);
+    let compare = format!(
         r#"
-var buffer = require("buffer");
-let buf = buffer.Buffer.from([{}]);
-let ret = test_fun(buf, 0);
-console.log(ret);
-assert.deepEqual(ret, [{}, {}]);
-"#,
-            bin_data_arr, data, bin_data.len()
-        );
+let buffer = require("buffer");
+let ref_js_data = {};
+let ref_length = {};
+let ref_buf = buffer.Buffer.from([{}]);
 
-        super::test_with_data_eq(&out, &compare);
-    }
+// size_of
+assert.deepEqual(exports["::test"]["size_of"](ref_js_data), ref_length);
+
+// serialize
+let buf = buffer.Buffer.alloc(ref_length, 0);
+exports["::test"]["serialize"](ref_js_data, buf, 0);
+assert(buf.equals(ref_buf));
+
+// deserialize
+let ret = exports["::test"]["deserialize"](ref_buf, 0);
+assert.deepEqual(ret, [ref_js_data, ref_length]);
+"#,
+        data, bin_data.len(), bin_data_arr
+    );
+
+    super::test_with_data_eq(&out, &compare);
+
+//    {
+//        let size_of = generate_size_of(ir.clone()).unwrap();
+//
+//        let mut out = String::new();
+//        size_of.to_javascript(&mut out, 0);
+//
+//        println!("{}", out);
+//
+//        let compare = format!("assert.deepEqual(test_fun({}), {});",
+//                              data, bin_data.len());
+//        super::test_with_data_eq(&out, &compare);
+//    }
+//
+//    {
+//        let serialize = generate_serialize(ir.clone()).unwrap();
+//
+//        let mut out = String::new();
+//        serialize.to_javascript(&mut out, 0);
+//
+//        println!("{}", out);
+//
+//        let compare = format!(
+//            r#"
+//var buffer = require("buffer");
+//let buf = buffer.Buffer.alloc({}, 0);
+//test_fun({}, buf, 0);
+//console.log(buf);
+//assert(buf.equals(buffer.Buffer.from([{}])));
+//"#,
+//            bin_data.len(), data, bin_data_arr
+//        );
+//
+//        super::test_with_data_eq(&out, &compare);
+//    }
+//
+//    {
+//        let deserialize = generate_deserialize(ir.clone()).unwrap();
+//
+//        let mut out = String::new();
+//        deserialize.to_javascript(&mut out, 0);
+//
+//        println!("{}", out);
+//
+//        let compare = format!(
+//        r#"
+//var buffer = require("buffer");
+//let buf = buffer.Buffer.from([{}]);
+//let ret = test_fun(buf, 0);
+//console.log(ret);
+//assert.deepEqual(ret, [{}, {}]);
+//"#,
+//            bin_data_arr, data, bin_data.len()
+//        );
+//
+//        super::test_with_data_eq(&out, &compare);
+//    }
 }
 
 #[test]
 fn simple_scalar() {
     test_single(
         r#"
-def_type("test") => u8;
+@type "integer"
+def_native("u8");
+
+def("test") => u8;
 "#,
         "0",
         &[0]
@@ -85,7 +119,10 @@ def_type("test") => u8;
 fn container() {
     test_single(
         r#"
-def_type("test") => container {
+@type "integer"
+def_native("u8");
+
+def("test") => container {
     field("foo") => u8;
     field("bar") => u8;
 };
@@ -99,7 +136,10 @@ def_type("test") => container {
 fn array() {
     test_single(
         r#"
-def_type("test") => container(virtual: "true") {
+@type "integer"
+def_native("u8");
+
+def("test") => container(virtual: "true") {
     virtual_field("len", ref: "arr", prop: "length") => u8;
     field("arr") => array(ref: "../len") => u8;
 };
@@ -112,7 +152,10 @@ def_type("test") => container(virtual: "true") {
 #[test]
 fn union() {
     let spec = r#"
-def_type("test") => container(virtual: "true") {
+@type "integer"
+def_native("u8");
+
+def("test") => container(virtual: "true") {
     virtual_field("tag", ref: "data", prop: "tag") => u8;
     field("data") => union("test_union", ref: "../tag") {
         variant("zero", match: "0") => u8;

@@ -23,6 +23,7 @@ impl BaseDeserialize for SimpleScalarVariant {
                 type_name: data.name.clone().into(),
                 input: "buffer".to_owned().into(),
                 output: output_for(data).into(),
+                named_type: self.target.clone().unwrap(),
             }
         ]))
     }

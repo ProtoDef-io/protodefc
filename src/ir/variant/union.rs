@@ -1,5 +1,5 @@
 use ::{TypeVariant, TypeData, Type, WeakTypeContainer, Result, TypeContainer, CompilerError};
-use ::ir::TargetType;
+use ::ir::{TargetType, CompilePass};
 use ::ir::variant::{Variant, VariantType};
 use ::FieldReference;
 use ::context::compilation_unit::{CompilationUnit, TypePath};
@@ -27,7 +27,6 @@ pub struct UnionCase {
 
 impl TypeVariant for UnionVariant {
     default_resolve_child_name_impl!();
-    default_resolve_on_context!();
 
     fn has_property(&self, _data: &TypeData, name: &str) -> Option<TargetType> {
         // TODO: Infer type
@@ -45,25 +44,32 @@ impl TypeVariant for UnionVariant {
         Some(TargetType::Enum)
     }
 
-    fn do_resolve_references(&mut self, data: &mut TypeData,
-                             resolver: &::ReferenceResolver) -> Result<()> {
+    fn do_compile_pass(&mut self, data: &mut TypeData, pass: &mut CompilePass)
+                       -> Result<()> {
+        match *pass {
+            CompilePass::ResolveInternalReferences(ref resolver) => {
+                self.match_field = Some(resolver(self, data,
+                                                 &self.match_field_ref)?);
 
-        self.match_field = Some(resolver(self, data, &self.match_field_ref)?);
+                let match_field = self.match_field.clone().unwrap().upgrade();
+                let match_field_inner = match_field.borrow();
+                let match_field_type = match_field_inner.variant.to_variant()
+                    .get_result_type(&match_field_inner.data);
 
-        let match_field = self.match_field.clone().unwrap().upgrade();
-        let match_field_inner = match_field.borrow();
-        let match_field_type = match_field_inner.variant.to_variant()
-            .get_result_type(&match_field_inner.data);
+                assert!(match_field_type != None, "results should be assigned at this stage of compilation");
+                let is_matchable = match_field_type.unwrap()
+                    != TargetType::Unknown;
+                ensure!(is_matchable, CompilerError::UnmatchableType {
+                    variant: match_field_inner.variant.get_type(
+                        &match_field_inner.data),
+                });
 
-        ensure!(match_field_type != None, CompilerError::UnmatchableType {
-            variant: match_field_inner.variant.get_type(&match_field_inner.data),
-        });
+                self.match_type = match_field_type;
 
-        ensure!(match_field_type != None,
-                "attempted to match on a unmatchable type");
-        self.match_type = match_field_type;
-
-        Ok(())
+                Ok(())
+            }
+            _ => Ok(()),
+        }
     }
 }
 

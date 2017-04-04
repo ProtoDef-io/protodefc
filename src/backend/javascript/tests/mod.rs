@@ -22,7 +22,8 @@ fn nodejs_run(script: &str) -> Vec<u8> {
 pub fn test_with_data_eq(function: &str, compare: &str) {
     let script = format!("
 let types = {};
-let test_fun = {};
+
+{}
 
 var assert = require(\"assert\");
 
@@ -55,7 +56,7 @@ fn nodejs_run_test() {
 fn test_with_data_eq_test() {
     let data = "{\"some\": \"thing\", \"else\": 0}";
     test_with_data_eq(
-        "function(input) { return input; }",
+        "var test_fun = function(input) { return input; };",
         &format!("assert.deepEqual(test_fun({}), {});", data, data),
     );
 }

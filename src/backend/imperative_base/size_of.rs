@@ -25,6 +25,7 @@ impl BaseSizeOf for SimpleScalarVariant {
             output: "size".to_owned().into(),
             typ: CallType::SizeOf,
             type_name: data.name.clone(),
+            named_type: self.target.clone().unwrap(),
         });
 
         ops.push(Operation::AddCount(Expr::Var("size".to_owned().into())));

@@ -1,5 +1,5 @@
 {
-    i8: {
+    "::i8": {
         size_of: function(input) { return 1; },
         serialize: function(input, buffer, offset) {
             buffer.writeInt8(input, offset);
@@ -9,7 +9,7 @@
             return [buffer.readInt8(offset), offset+1];
         },
     },
-    u8: {
+    "::u8": {
         size_of: function(input) { return 1; },
         serialize: function(input, buffer, offset) {
             buffer.writeInt8(input, offset);
@@ -19,7 +19,7 @@
             return [buffer.readInt8(offset), offset+1];
         },
     },
-    i16: {
+    "::i16": {
         size_of: function(input) { return 2; },
         serialize: function(input, buffer, offset) {
             buffer.writeInt16BE(input, offset);
@@ -29,7 +29,7 @@
             return [buffer.readInt16BE(offset), offset+2];
         },
     },
-    u16: {
+    "::u16": {
         size_of: function(input) { return 2; },
         serialize: function(input, buffer, offset) {
             buffer.writeUInt16BE(input, offset);
@@ -39,7 +39,7 @@
             return [buffer.readUInt16BE(offset), offset+2];
         },
     },
-    i32: {
+    "::i32": {
         size_of: function(input) { return 4; },
         serialize: function(input, buffer, offset) {
             buffer.writeInt32BE(input, offset);
@@ -49,7 +49,7 @@
             return [buffer.readInt32BE(offset), offset+4];
         },
     },
-    u32: {
+    "::u32": {
         size_of: function(input) { return 4; },
         serialize: function(input, buffer, offset) {
             buffer.writeUInt32BE(input, offset);
@@ -59,7 +59,7 @@
             return [buffer.readUInt32BE(offset), offset+4];
         },
     },
-    i64: {
+    "::i64": {
         size_of: function(input) { return 8; },
         serialize: function(input, buffer, offset) {
             buffer.writeInt64BE(input, offset);
@@ -69,7 +69,7 @@
             return [buffer.readInt64BE(offset), offset+8];
         },
     },
-    u64: {
+    "::u64": {
         size_of: function(input) { return 8; },
         serialize: function(input, buffer, offset) {
             buffer.writeUInt64BE(input, offset);
@@ -79,7 +79,7 @@
             return [buffer.readUInt64BE(offset), offset+8];
         },
     },
-    varint: {
+    "::varint": {
         size_of: function(value) {
             let cursor = 0;
             while(value & ~0x7F) {

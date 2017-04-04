@@ -23,6 +23,7 @@ impl BaseSerialize for SimpleScalarVariant {
                 output: "".to_owned().into(), // TODO
                 typ: CallType::Serialize,
                 type_name: data.name.clone().into(),
+                named_type: self.target.clone().unwrap(),
             },
         ]))
     }

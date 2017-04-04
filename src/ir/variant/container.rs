@@ -2,7 +2,7 @@ use ::{TypeVariant, TypeData, Type, WeakTypeContainer, Result, TypeContainer, Co
 use super::{Variant, VariantType};
 use ::FieldPropertyReference;
 use ::context::compilation_unit::{CompilationUnit, TypePath};
-use ::ir::TargetType;
+use ::ir::{TargetType, CompilePass};
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -32,47 +32,52 @@ impl TypeVariant for ContainerVariant {
 
     default_has_property_impl!();
     default_get_result_type_impl!();
-    default_resolve_on_context!();
 
-    fn do_resolve_references(&mut self,
-                             data: &mut TypeData,
-                             resolver: &::ReferenceResolver)
-                             -> Result<()> {
+    fn do_compile_pass(&mut self, data: &mut TypeData, pass: &mut CompilePass)
+                       -> Result<()> {
+        match *pass {
+            CompilePass::ResolveInternalReferences(ref resolver) => {
+                let mut resolves: Vec<WeakTypeContainer> =
+                    Vec::with_capacity(self.fields.len());
 
-        let mut resolves: Vec<WeakTypeContainer> = Vec::with_capacity(self.fields.len());
+                for field in &self.fields {
+                    match field.field_type {
+                        ContainerFieldType::Virtual { ref property } => {
+                            let prop_node = resolver(self, data,
+                                                     &property.reference)?;
 
-        for field in &self.fields {
-            match field.field_type {
-                ContainerFieldType::Virtual { ref property } => {
-                    let prop_node = resolver(self, data, &property.reference)?;
+                            let prop_node_u = prop_node.upgrade();
+                            let prop_node_ui = prop_node_u.borrow();
 
-                    let prop_node_u = prop_node.upgrade();
-                    let prop_node_ui = prop_node_u.borrow();
+                            let prop_valid = prop_node_ui.variant
+                                .to_variant()
+                                .has_property(&prop_node_ui.data,
+                                              &property.property);
+                            ensure!(prop_valid != None, CompilerError::NoProperty {
+                                property: property.property.clone(),
+                                variant: prop_node_ui.variant.get_type(
+                                    &prop_node_ui.data),
+                            });
 
-                    let prop_valid = prop_node_ui.variant
-                        .to_variant()
-                        .has_property(&prop_node_ui.data, &property.property);
-                    ensure!(prop_valid != None, CompilerError::NoProperty {
-                        property: property.property.clone(),
-                        variant: prop_node_ui.variant.get_type(&prop_node_ui.data),
-                    });
-
-                    resolves.push(prop_node);
+                            resolves.push(prop_node);
+                        }
+                        _ => (),
+                    }
                 }
-                _ => (),
-            }
-        }
 
-        for field in self.fields.iter_mut().rev() {
-            match field.field_type {
-                ContainerFieldType::Virtual { ref mut property } => {
-                    property.reference_node = resolves.pop();
+                for field in self.fields.iter_mut().rev() {
+                    match field.field_type {
+                        ContainerFieldType::Virtual { ref mut property } => {
+                            property.reference_node = resolves.pop();
+                        }
+                        _ => (),
+                    }
                 }
-                _ => (),
-            }
-        }
 
-        Ok(())
+                Ok(())
+            }
+            _ => Ok(()),
+        }
     }
 }
 

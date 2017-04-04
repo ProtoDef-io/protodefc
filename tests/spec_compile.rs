@@ -37,7 +37,7 @@ fn compile(spec: &str) -> Result<TypeContainer> {
 #[test]
 fn simple_container() {
     unwrap_ok!(compile(r#"
-def_type("test") => container {
+def("test") => container {
     field("field_1") => u8;
 };
 "#));
@@ -46,7 +46,7 @@ def_type("test") => container {
 #[test]
 fn container_virtual_field() {
     unwrap_ok!(compile(r#"
-def_type("test") => container {
+def("test") => container {
     virtual_field("field_1", ref: "field_2", prop: "length") => u8;
     field("field_2") => array(ref: "../field_1") => u8;
 };
@@ -56,7 +56,7 @@ def_type("test") => container {
 #[test]
 fn container_virtual_field_nonexistent_ref() {
     unwrap_error!(compile(r#"
-def_type("test") => container {
+def("test") => container {
     virtual_field("field_1", ref: "field_2", prop: "length") => u8;
 };
 "#));

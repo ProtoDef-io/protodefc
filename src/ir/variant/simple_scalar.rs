@@ -2,8 +2,9 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use super::{Variant, VariantType};
 use ::ir::{Type, TypeVariant, TypeData, Result, WeakTypeContainer, TypeContainer};
-use ::ir::TargetType;
-use ::context::compilation_unit::{CompilationUnit, TypePath};
+use ::ir::{TargetType, CompilePass};
+use ::context::compilation_unit::{CompilationUnit, TypePath, NamedTypeContainer};
+use ::errors::*;
 
 /// This is a simple terminal scalar.
 ///
@@ -14,6 +15,7 @@ use ::context::compilation_unit::{CompilationUnit, TypePath};
 /// the type.
 #[derive(Debug)]
 pub struct SimpleScalarVariant {
+    pub target: Option<NamedTypeContainer>,
     pub target_type: Option<TargetType>,
 }
 
@@ -22,12 +24,39 @@ impl TypeVariant for SimpleScalarVariant {
         VariantType::SimpleScalar(data.name.clone())
     }
     fn get_result_type(&self, _data: &TypeData) -> Option<TargetType> {
-        self.target_type.clone()
+        self.target_type
     }
     default_resolve_child_name_impl!();
     default_has_property_impl!();
-    default_resolve_references!();
-    default_resolve_on_context!();
+
+    fn do_compile_pass(&mut self, data: &mut TypeData, pass: &mut CompilePass)
+                       -> Result<()> {
+        match *pass {
+            CompilePass::ResolveReferencedTypes(ref path, ref cu) => {
+                let target_resolved = cu.resolve_type(
+                    &data.name.in_context(&path.path))
+                    .chain_err(|| format!("while resolving type of simple_scalar"))?;
+                self.target = Some(target_resolved);
+
+                Ok(())
+            }
+            CompilePass::PropagateTypes { ref mut has_changed } => {
+                let target_named_type = self.target.clone().unwrap();
+                let target_named_type_inner = target_named_type.borrow();
+                let result_type = target_named_type_inner.typ.get_result_type();
+
+                if result_type != self.target_type {
+                    **has_changed = true;
+                }
+
+                self.target_type = result_type;
+
+                Ok(())
+
+            }
+            _ => Ok(()),
+        }
+    }
 }
 
 impl SimpleScalarVariant {
@@ -44,6 +73,7 @@ impl SimpleScalarVariant {
         TypeContainer::new(Type {
             data: data,
             variant: Variant::SimpleScalar(SimpleScalarVariant {
+                target: None,
                 target_type: target_type,
             }),
         })

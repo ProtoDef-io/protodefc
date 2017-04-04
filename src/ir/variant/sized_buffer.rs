@@ -1,5 +1,5 @@
 use ::{TypeVariant, TypeData, WeakTypeContainer, Result};
-use ::ir::TargetType;
+use ::ir::{TargetType, CompilePass};
 use ::FieldReference;
 use super::VariantType;
 use ::context::compilation_unit::{CompilationUnit, TypePath};
@@ -16,7 +16,10 @@ impl TypeVariant for SizedBufferVariant {
 
     default_resolve_child_name_impl!();
     default_has_property_impl!();
-    default_resolve_references!();
     default_get_result_type_impl!();
-    default_resolve_on_context!();
+
+    fn do_compile_pass(&mut self, data: &mut TypeData, pass: &mut CompilePass)
+                       -> Result<()> {
+        Ok(())
+    }
 }

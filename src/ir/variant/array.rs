@@ -1,5 +1,5 @@
 use ::{TypeVariant, TypeData, Type, WeakTypeContainer, Result, TypeContainer};
-use ::ir::TargetType;
+use ::ir::{TargetType, CompilePass};
 use ::FieldReference;
 use ::context::compilation_unit::{CompilationUnit, TypePath};
 use super::{Variant, VariantType};
@@ -19,7 +19,6 @@ pub struct ArrayVariant {
 impl TypeVariant for ArrayVariant {
     default_resolve_child_name_impl!();
     default_get_result_type_impl!();
-    default_resolve_on_context!();
 
     fn get_type(&self, _data: &TypeData) -> VariantType {
         VariantType::Array
@@ -33,19 +32,25 @@ impl TypeVariant for ArrayVariant {
         }
     }
 
-    fn do_resolve_references(&mut self, data: &mut TypeData,
-                             resolver: &::ReferenceResolver) -> Result<()> {
-        self.count = Some(resolver(self, data, &self.count_path)?);
+    fn do_compile_pass(&mut self, data: &mut TypeData, pass: &mut CompilePass)
+                       -> Result<()> {
+        match *pass {
+            CompilePass::ResolveInternalReferences(ref resolver) => {
+                self.count = Some(resolver(self, data, &self.count_path)?);
 
-        let count = self.count.clone().unwrap().upgrade();
-        let count_inner = count.borrow();
-        let count_type = count_inner.variant.to_variant()
-            .get_result_type(&count_inner.data);
+                let count = self.count.clone().unwrap().upgrade();
+                let count_inner = count.borrow();
+                let count_type = count_inner.variant.to_variant()
+                    .get_result_type(&count_inner.data);
 
-        ensure!(count_type == Some(TargetType::Integer),
-                "result type of reference is non-integer");
+                assert!(count_type != None, "results should be assigned in this stage of compilation");
+                ensure!(count_type == Some(TargetType::Integer),
+                        "result type of reference is non-integer");
 
-        Ok(())
+                Ok(())
+            }
+            _ => Ok(()),
+        }
     }
 }
 

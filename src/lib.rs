@@ -23,6 +23,8 @@ use errors::*;
 
 pub use context::compilation_unit::CompilationUnit;
 
+pub mod rc_container;
+
 pub fn run_passes(ir: &TypeContainer) -> Result<()> {
     ::pass::assign_parent::run(ir)?;
     ::pass::assign_ident::run(ir)?;

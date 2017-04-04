@@ -7,9 +7,11 @@ pub use self::ast::parser::parse;
 pub use self::to_ir::type_def_to_ir;
 
 use ::context::compilation_unit::{CompilationUnit, CompilationUnitNS, NamedType,
-                                  TypePath, NSPath};
+                                  TypePath, NSPath, TypeKind};
 use ::context::id_generator::IdGenerator;
 use ::errors::*;
+
+use ::ir::TargetType;
 
 pub fn to_compilation_unit(input: &str) -> Result<CompilationUnit> {
     let ast = ast::parser::parse(input)?;
@@ -36,21 +38,49 @@ fn block_to_compilation_unit_ns(block: &ast::Block, cu: &mut CompilationUnit,
             .ok_or("statement in root must start with non-namespaced item")?;
 
         match head_item_name.as_ref() {
-            "def_type" => {
+            "def" => {
                 head_item.validate(1, &[], &[])?;
                 let name = head_item.arg(0).unwrap().string()
-                    .ok_or("argument to def_type must be string")?;
+                    .ok_or("argument to def must be string")?;
 
                 let typ = to_ir::type_def_to_ir(stmt)?;
+
                 ns.add_type(NamedType {
                     path: TypePath {
                         path: ns_path.clone(),
                         name: name.to_owned(),
                     },
-                    typ: typ,
+                    typ: TypeKind::Type(typ),
                     type_id: gen.get(),
                 })?;
             },
+            "def_native" => {
+                head_item.validate(1, &[], &[])?;
+                let name = head_item.arg(0).unwrap().string()
+                    .ok_or("argument to def_native must be string")?;
+
+                if stmt.items.len() != 1 {
+                    bail!("def_native statement cannot have any children");
+                }
+
+                let target_type_str = stmt.attributes
+                    .get("type").ok_or("def_native must have @type annotation")?
+                    .string().ok_or("def_native @type annotation must be string")?;
+                let target_type = match target_type_str {
+                    "none" => TargetType::Unknown,
+                    "integer" => TargetType::Integer,
+                    name => bail!("unknown type '{}'", name),
+                };
+
+                ns.add_type(NamedType {
+                    path: TypePath {
+                        path: ns_path.clone(),
+                        name: name.to_owned(),
+                    },
+                    typ: TypeKind::Native(target_type),
+                    type_id: gen.get(),
+                })?;
+            }
             "namespace" => {
                 head_item.validate(1, &[], &[])?;
                 let name = head_item.arg(0).unwrap().string()
@@ -63,7 +93,7 @@ fn block_to_compilation_unit_ns(block: &ast::Block, cu: &mut CompilationUnit,
                 path.push(name.to_owned());
                 block_to_compilation_unit_ns(&head_item.block, cu, gen, path)?;
                 path.pop();
-            },
+            }
             name => bail!("'{}' item not allowed in root", name),
         }
     }
@@ -79,11 +109,11 @@ mod tests {
     #[test]
     fn spec_to_compilation_unit() {
         let result = to_compilation_unit(r#"
-def_type("root_type") => u8;
+def("root_type") => u8;
 namespace("some_namespace") {
-    def_type("inner_type") => u8;
+    def("inner_type") => u8;
     namespace("inner_namespace") {
-        def_type("deep_type") => u8;
+        def("deep_type") => u8;
     };
 };
 "#).unwrap();

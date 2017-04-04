@@ -1,6 +1,7 @@
 use super::Result;
 
 use ::{Type, TypeContainer, TypeVariant, TypeData, WeakTypeContainer, CompilerError};
+use ::ir::CompilePass;
 use ::errors::*;
 use ::FieldReference;
 
@@ -51,8 +52,10 @@ fn do_run(typ: &TypeContainer, parents: &mut Vec<WeakTypeContainer>)
         };
 
         let Type { ref mut data, ref mut variant } = *inner;
+
+        let mut pass = CompilePass::ResolveInternalReferences(resolver);
         variant.to_variant_mut()
-            .do_resolve_references(data, resolver)
+            .do_compile_pass(data, &mut pass)
             .chain_err(|| chain.clone())?;
     }
 

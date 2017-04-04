@@ -21,7 +21,7 @@ macro_rules! default_has_property_impl {
 macro_rules! default_get_result_type_impl {
     () => {
         fn get_result_type(&self, _data: &TypeData) -> Option<TargetType> {
-            None
+            Some(TargetType::Unknown)
         }
     }
 }
@@ -35,8 +35,16 @@ macro_rules! default_resolve_references {
 }
 macro_rules! default_resolve_on_context {
     () => {
-        fn resolve_on_context(&self, _data: &TypeData, _current_path: &TypePath,
+        fn resolve_on_context(&mut self, _data: &TypeData, _current_path: &TypePath,
                               _context: &CompilationUnit) -> Result<()> {
+            Ok(())
+        }
+    }
+}
+macro_rules! default_do_compile_pass {
+    () => {
+        fn do_compile_pass(&mut self, _data: &TypeData, _pass: &mut CompilePass)
+                           -> Result<()> {
             Ok(())
         }
     }

@@ -1,35 +1,26 @@
 use super::Result;
 
-use ::{Type, TypeContainer, TypeVariant, TypeData, WeakTypeContainer, CompilerError};
-use ::errors::*;
-use ::FieldReference;
-use ::context::compilation_unit::{NamedType, CompilationUnit, NSPath, TypePath};
+use ::{Type, TypeContainer};
+use ::ir::CompilePass;
+use ::context::compilation_unit::{CompilationUnit, TypePath,
+                                  TypeKind, NamedTypeContainer};
 
-struct ResolveContextState<'a> {
-    compilation_unit: &'a CompilationUnit,
-    current_path: &'a TypePath,
-}
+pub fn run(typ: &NamedTypeContainer, compilation_unit: &CompilationUnit) -> Result<()> {
+    let borrowed = typ.borrow();
 
-pub fn run(typ: &NamedType, compilation_unit: &CompilationUnit) -> Result<()> {
-    run_inner(&typ.typ, &ResolveContextState {
-        compilation_unit: compilation_unit,
-        current_path: &typ.path,
-    })
-}
+    if let TypeKind::Type(ref container) = borrowed.typ {
+        super::traverse(container, &mut |typ| {
+            let mut inner = typ.borrow_mut();
 
-fn run_inner(typ: &TypeContainer, state: &ResolveContextState)
-                 -> Result<()> {
-    let mut children;
-    {
-        let mut inner = typ.borrow_mut();
-        children = inner.data.children.clone();
+            use ::std::ops::DerefMut;
+            let Type { ref mut data, ref mut variant } = *inner.deref_mut();
 
-        inner.variant.to_variant().resolve_on_context(
-            &inner.data, state.current_path, state.compilation_unit)?;
-    }
+            let mut pass = CompilePass::ResolveReferencedTypes(
+                &borrowed.path, compilation_unit);
 
-    for mut child in &mut children {
-        run_inner(child, state)?;
+            variant.to_variant_mut()
+                .do_compile_pass(data, &mut pass)
+        })?;
     }
 
     Ok(())
