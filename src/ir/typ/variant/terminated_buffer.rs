@@ -1,7 +1,8 @@
-use ::{TypeVariant, TypeData, WeakTypeContainer, Result};
-use ::ir::{TargetType, CompilePass};
-use super::VariantType;
-use ::context::compilation_unit::{CompilationUnit, TypePath};
+use ::errors::*;
+use ::ir::TargetType;
+use ::ir::typ::{TypeVariant, TypeData, WeakTypeContainer, CompilePass};
+use ::ir::typ::variant::VariantType;
+use ::ir::compilation_unit::{CompilationUnit, TypePath};
 
 #[derive(Debug)]
 pub struct TerminatedBufferVariant {

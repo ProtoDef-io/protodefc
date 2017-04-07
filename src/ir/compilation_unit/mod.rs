@@ -27,7 +27,7 @@ pub struct NamedType {
     pub type_id: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TypeKind {
     Native(TargetType),
     Type(TypeContainer),
@@ -79,23 +79,22 @@ impl CompilationUnit {
     }
 
     pub fn compile_types(&self) -> Result<()> {
-        self.each_type(&mut |typ| {
-            if let TypeKind::Type(ref container) = typ.borrow().typ {
-                ::pass::assign_parent::run(container)?;
-                ::pass::assign_ident::run(container)?;
-                ::pass::resolve_context::run(typ, self)?;
-            }
-            Ok(())
-        })?;
 
+        // Resolves references between defined types in a context
+        ::pass::resolve_context::run(self)?;
+
+        // Propagates types between defined types in a context
+        // Depends on: resolve_context
         ::pass::propagate_types::run(self)?;
 
-        self.each_type(&mut |typ| {
-            if let TypeKind::Type(ref container) = typ.borrow().typ {
-                ::pass::resolve_reference::run(container)?;
-            }
-            Ok(())
-        })?;
+        // Resolves all references to other nodes within a type
+        ::pass::resolve_reference::run(self)?;
+
+        // Gives all nodes a weak reference to their parent
+        ::pass::assign_parent::run(self)?;
+
+        // Assigns all nodes within a type with a locally unique identifier
+        ::pass::assign_ident::run(self)?;
 
         Ok(())
     }
@@ -125,6 +124,38 @@ impl CompilationUnit {
             }
         }
         Ok(())
+    }
+
+    pub fn each_type_traverse_node<F>(&self, f: &mut F) -> Result<()>
+        where F: FnMut(&NamedTypeContainer, &TypeContainer) -> Result<()> {
+
+        fn traverse_type<I>(cont: &NamedTypeContainer, typ: &TypeContainer, f: &mut I) -> Result<()>
+            where I: FnMut(&NamedTypeContainer, &TypeContainer) -> Result<()> {
+
+            let children = {
+                typ.borrow().data.children.clone()
+            };
+
+            f(cont, typ)?;
+
+            for child in &children {
+                traverse_type(cont, child, f)?;
+            }
+
+            Ok(())
+        }
+
+        self.each_type(&mut |typ| {
+            let root = {
+                typ.borrow().typ.clone()
+            };
+
+            if let TypeKind::Type(ref container) = root {
+                traverse_type(typ, container, f)?;
+            };
+
+            Ok(())
+        })
     }
 
     pub fn resolve_type(&self, path: &TypePath) -> Result<NamedTypeContainer> {

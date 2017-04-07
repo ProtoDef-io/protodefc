@@ -1,8 +1,8 @@
-use ::{TypeVariant, TypeData, WeakTypeContainer, Result};
-use ::ir::{TargetType, CompilePass};
-use ::FieldReference;
+use ::errors::*;
+use ::ir::{TargetType, FieldReference};
+use ::ir::typ::{TypeVariant, TypeData, WeakTypeContainer, CompilePass};
 use super::VariantType;
-use ::context::compilation_unit::{CompilationUnit, TypePath};
+use ::ir::compilation_unit::{CompilationUnit, TypePath};
 
 #[derive(Debug)]
 pub struct SizedBufferVariant {

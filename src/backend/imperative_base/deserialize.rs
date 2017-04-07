@@ -1,6 +1,6 @@
 use ::errors::*;
-use ::ir::{TypeVariant, TypeData, TypeContainer};
-use ::ir::variant::{SimpleScalarVariant, ContainerVariant, ContainerField, ContainerFieldType, ArrayVariant, UnionVariant};
+use ::ir::typ::{TypeVariant, TypeData, TypeContainer};
+use ::ir::typ::variant::*;
 use super::*;
 use super::utils::*;
 use super::container_utils::*;

@@ -1,4 +1,3 @@
-use ::spec_type_to_final_ast;
 use ::spec_to_final_compilation_unit;
 use ::backend::javascript::size_of::generate_size_of;
 use ::backend::javascript::serialize::generate_serialize;
@@ -14,7 +13,7 @@ fn test_single(spec: &str, data: &str, bin_data: &[u8]) {
         .map(|val| format!("{}", val))
         .join(",");
 
-    let block = generate_compilation_unit(cu).unwrap();
+    let block = generate_compilation_unit(&cu).unwrap();
     let mut out = String::new();
     block.to_javascript(&mut out, 0);
 
@@ -43,62 +42,6 @@ assert.deepEqual(ret, [ref_js_data, ref_length]);
 
     super::test_with_data_eq(&out, &compare);
 
-//    {
-//        let size_of = generate_size_of(ir.clone()).unwrap();
-//
-//        let mut out = String::new();
-//        size_of.to_javascript(&mut out, 0);
-//
-//        println!("{}", out);
-//
-//        let compare = format!("assert.deepEqual(test_fun({}), {});",
-//                              data, bin_data.len());
-//        super::test_with_data_eq(&out, &compare);
-//    }
-//
-//    {
-//        let serialize = generate_serialize(ir.clone()).unwrap();
-//
-//        let mut out = String::new();
-//        serialize.to_javascript(&mut out, 0);
-//
-//        println!("{}", out);
-//
-//        let compare = format!(
-//            r#"
-//var buffer = require("buffer");
-//let buf = buffer.Buffer.alloc({}, 0);
-//test_fun({}, buf, 0);
-//console.log(buf);
-//assert(buf.equals(buffer.Buffer.from([{}])));
-//"#,
-//            bin_data.len(), data, bin_data_arr
-//        );
-//
-//        super::test_with_data_eq(&out, &compare);
-//    }
-//
-//    {
-//        let deserialize = generate_deserialize(ir.clone()).unwrap();
-//
-//        let mut out = String::new();
-//        deserialize.to_javascript(&mut out, 0);
-//
-//        println!("{}", out);
-//
-//        let compare = format!(
-//        r#"
-//var buffer = require("buffer");
-//let buf = buffer.Buffer.from([{}]);
-//let ret = test_fun(buf, 0);
-//console.log(ret);
-//assert.deepEqual(ret, [{}, {}]);
-//"#,
-//            bin_data_arr, data, bin_data.len()
-//        );
-//
-//        super::test_with_data_eq(&out, &compare);
-//    }
 }
 
 #[test]

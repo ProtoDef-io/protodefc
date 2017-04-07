@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use ::FieldReference;
-use ::context::compilation_unit::NSPath;
+use ::ir::FieldReference;
+use ::ir::compilation_unit::{NSPath, TypePath};
 
 pub mod parser;
 pub mod printer;
@@ -80,6 +80,13 @@ impl Value {
         self.string().and_then(|string| FieldReference::parse(string))
     }
 
+    pub fn new_string(string: String) -> Value {
+        Value::String {
+            string: string,
+            is_block: false,
+        }
+    }
+
 }
 
 impl Ident {
@@ -88,6 +95,17 @@ impl Ident {
         match *self {
             Ident::Simple(ref string) => Some(string),
             _ => None,
+        }
+    }
+
+    pub fn to_type_path(&self) -> TypePath {
+        match *self {
+            Ident::Simple(ref string) =>
+                TypePath::with_no_ns(string.to_owned()),
+            Ident::RootNs(ref ns) =>
+                TypePath::with_ns(
+                    ns[..(ns.len()-1)].into(),
+                    ns.last().unwrap().clone())
         }
     }
 

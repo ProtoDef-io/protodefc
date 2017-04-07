@@ -1,4 +1,4 @@
-use ::ir::TypeContainer;
+use ::ir::typ::TypeContainer;
 use super::builder::Block;
 use ::backend::imperative_base as ib;
 use ::errors::*;

@@ -22,12 +22,12 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                 let mut ib = Block::new();
                 {
                     let expr = format!("{}[{}]", array.0, index_var);
-                    ib.let_assign(typ.0.clone(), expr.into());
+                    ib.var_assign(typ.0.clone(), expr.into());
 
                     ib.scope(build_block(block)?);
                 }
 
-                b.let_assign(length_var.clone(),
+                b.var_assign(length_var.clone(),
                              format!("{}.length", array.0).into());
                 b.for_(
                     format!("var {} = 0", index_var).into(),

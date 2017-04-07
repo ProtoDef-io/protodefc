@@ -7,7 +7,7 @@ pub mod container_utils;
 
 mod tests;
 
-use ::context::compilation_unit::{TypePath, NamedTypeContainer};
+use ::ir::compilation_unit::{TypePath, NamedTypeContainer};
 
 #[derive(Debug)]
 pub struct Block(pub Vec<Operation>);
@@ -125,13 +125,13 @@ impl From<String> for Var {
 
 trait BaseCodegen : size_of::BaseSizeOf + serialize::BaseSerialize + deserialize::BaseDeserialize {}
 
-impl BaseCodegen for ::ir::variant::SimpleScalarVariant {}
-impl BaseCodegen for ::ir::variant::ContainerVariant {}
-impl BaseCodegen for ::ir::variant::ArrayVariant {}
-impl BaseCodegen for ::ir::variant::UnionVariant {}
+impl BaseCodegen for ::ir::typ::variant::SimpleScalarVariant {}
+impl BaseCodegen for ::ir::typ::variant::ContainerVariant {}
+impl BaseCodegen for ::ir::typ::variant::ArrayVariant {}
+impl BaseCodegen for ::ir::typ::variant::UnionVariant {}
 
-fn codegen_for_type<'a>(typ: &'a ::ir::Type) -> &'a BaseCodegen {
-    use ::ir::variant::Variant;
+fn codegen_for_type<'a>(typ: &'a ::ir::typ::Type) -> &'a BaseCodegen {
+    use ::ir::typ::variant::Variant;
     match typ.variant {
         Variant::SimpleScalar(ref inner) => inner,
         Variant::Container(ref inner) => inner,

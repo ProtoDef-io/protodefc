@@ -1,11 +1,15 @@
-use ::ir::variant::VariantType;
-use ::FieldReference;
+use ::ir::typ::variant::VariantType;
+use ::ir::FieldReference;
 
 error_chain! {
     links {
         //JsonParseError(
         //    ::frontend::protocol_json::Error,
         //    ::frontend::protocol_json::ErrorKind);
+    }
+
+    foreign_links {
+        JsonParseError(::json::Error);
     }
 
     errors {

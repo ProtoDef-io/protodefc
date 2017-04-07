@@ -1,7 +1,8 @@
-use ::ir::{TypeVariant, TypeData, Result, WeakTypeContainer};
-use ::context::compilation_unit::{CompilationUnit, TypePath};
-use ::ir::{TargetType, CompilePass};
-use super::VariantType;
+use ::errors::*;
+use ::ir::TargetType;
+use ::ir::typ::{TypeVariant, TypeData, WeakTypeContainer, CompilePass};
+use ::ir::typ::variant::VariantType;
+use ::ir::compilation_unit::{CompilationUnit, TypePath};
 
 #[derive(Debug)]
 pub struct ErrorVariant {

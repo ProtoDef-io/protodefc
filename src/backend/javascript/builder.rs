@@ -15,10 +15,6 @@ impl Block {
         self.0.push(Statement::Assign { variant: AssignVariant::Var,
                                         name: name, expr: expr, });
     }
-    pub fn let_assign(&mut self, name: String, expr: Expr) {
-        self.0.push(Statement::Assign { variant: AssignVariant::Let,
-                                        name: name, expr: expr, });
-    }
 
     pub fn if_(&mut self, cond: Expr, block: Block) {
         self.0.push(Statement::If { conds: vec![(cond, block)],
@@ -95,16 +91,12 @@ impl<'a> From<&'a str> for Expr {
 pub enum AssignVariant {
     None,
     Var,
-    Let,
-    Const,
 }
 impl AssignVariant {
     fn append(self, out: &mut String) {
         let s = match self {
             AssignVariant::None => "",
             AssignVariant::Var => "var ",
-            AssignVariant::Let => "let ",
-            AssignVariant::Const => "const ",
         };
         out.push_str(s);
     }

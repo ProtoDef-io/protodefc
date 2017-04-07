@@ -3,20 +3,19 @@ pub mod ast;
 pub mod from_ir;
 pub mod to_ir;
 
-pub use self::ast::parser::parse;
-pub use self::to_ir::type_def_to_ir;
-
-use ::context::compilation_unit::{CompilationUnit, CompilationUnitNS, NamedType,
-                                  TypePath, NSPath, TypeKind};
-use ::context::id_generator::IdGenerator;
+use ::ir::compilation_unit::{CompilationUnit, CompilationUnitNS, NSPath, NamedType, TypeKind,
+                                  TypePath};
+use ::ir::IdGenerator;
 use ::errors::*;
 
 use ::ir::TargetType;
+pub use self::ast::parser::parse;
+pub use self::to_ir::type_def_to_ir;
 
 pub fn to_compilation_unit(input: &str) -> Result<CompilationUnit> {
     let ast = ast::parser::parse(input)?;
 
-    let mut id_gen = ::context::id_generator::IdGenerator::new();
+    let mut id_gen = IdGenerator::new();
     let mut path = Vec::<String>::new();
     let mut cu = CompilationUnit::new();
 
@@ -25,8 +24,10 @@ pub fn to_compilation_unit(input: &str) -> Result<CompilationUnit> {
     Ok(cu)
 }
 
-fn block_to_compilation_unit_ns(block: &ast::Block, cu: &mut CompilationUnit,
-                                gen: &mut IdGenerator, path: &mut Vec<String>)
+fn block_to_compilation_unit_ns(block: &ast::Block,
+                                cu: &mut CompilationUnit,
+                                gen: &mut IdGenerator,
+                                path: &mut Vec<String>)
                                 -> Result<()> {
     let ns_path = NSPath::with_path(path.clone());
     let mut ns = CompilationUnitNS::new(ns_path.clone());
@@ -34,29 +35,34 @@ fn block_to_compilation_unit_ns(block: &ast::Block, cu: &mut CompilationUnit,
     for stmt in &block.statements {
         let head_item = stmt.items[0].item()
             .ok_or("statement in root must start with item")?;
-        let head_item_name = head_item.name.simple_str()
+        let head_item_name = head_item.name
+            .simple_str()
             .ok_or("statement in root must start with non-namespaced item")?;
 
         match head_item_name.as_ref() {
             "def" => {
                 head_item.validate(1, &[], &[])?;
-                let name = head_item.arg(0).unwrap().string()
+                let name = head_item.arg(0)
+                    .unwrap()
+                    .string()
                     .ok_or("argument to def must be string")?;
 
                 let typ = to_ir::type_def_to_ir(stmt)?;
 
                 ns.add_type(NamedType {
-                    path: TypePath {
-                        path: ns_path.clone(),
-                        name: name.to_owned(),
-                    },
-                    typ: TypeKind::Type(typ),
-                    type_id: gen.get(),
-                })?;
-            },
+                        path: TypePath {
+                            path: ns_path.clone(),
+                            name: name.to_owned(),
+                        },
+                        typ: TypeKind::Type(typ),
+                        type_id: gen.get(),
+                    })?;
+            }
             "def_native" => {
                 head_item.validate(1, &[], &[])?;
-                let name = head_item.arg(0).unwrap().string()
+                let name = head_item.arg(0)
+                    .unwrap()
+                    .string()
                     .ok_or("argument to def_native must be string")?;
 
                 if stmt.items.len() != 1 {
@@ -64,8 +70,10 @@ fn block_to_compilation_unit_ns(block: &ast::Block, cu: &mut CompilationUnit,
                 }
 
                 let target_type_str = stmt.attributes
-                    .get("type").ok_or("def_native must have @type annotation")?
-                    .string().ok_or("def_native @type annotation must be string")?;
+                    .get("type")
+                    .ok_or("def_native must have @type annotation")?
+                    .string()
+                    .ok_or("def_native @type annotation must be string")?;
                 let target_type = match target_type_str {
                     "none" => TargetType::Unknown,
                     "integer" => TargetType::Integer,
@@ -73,17 +81,19 @@ fn block_to_compilation_unit_ns(block: &ast::Block, cu: &mut CompilationUnit,
                 };
 
                 ns.add_type(NamedType {
-                    path: TypePath {
-                        path: ns_path.clone(),
-                        name: name.to_owned(),
-                    },
-                    typ: TypeKind::Native(target_type),
-                    type_id: gen.get(),
-                })?;
+                        path: TypePath {
+                            path: ns_path.clone(),
+                            name: name.to_owned(),
+                        },
+                        typ: TypeKind::Native(target_type),
+                        type_id: gen.get(),
+                    })?;
             }
             "namespace" => {
                 head_item.validate(1, &[], &[])?;
-                let name = head_item.arg(0).unwrap().string()
+                let name = head_item.arg(0)
+                    .unwrap()
+                    .string()
                     .ok_or("argument to namespace must be string")?;
 
                 if stmt.items.len() != 1 {
@@ -116,7 +126,8 @@ namespace("some_namespace") {
         def("deep_type") => u8;
     };
 };
-"#).unwrap();
+"#)
+            .unwrap();
         println!("{:?}", result);
     }
 

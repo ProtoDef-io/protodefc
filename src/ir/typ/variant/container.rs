@@ -1,8 +1,8 @@
-use ::{TypeVariant, TypeData, Type, WeakTypeContainer, Result, TypeContainer, CompilerError};
-use super::{Variant, VariantType};
-use ::FieldPropertyReference;
-use ::context::compilation_unit::{CompilationUnit, TypePath};
-use ::ir::{TargetType, CompilePass};
+use ::ir::{TargetType, FieldPropertyReference};
+use ::ir::typ::{TypeVariant, TypeData, Type, WeakTypeContainer, TypeContainer, CompilePass};
+use ::ir::typ::variant::{Variant, VariantType};
+use ::ir::compilation_unit::{CompilationUnit, TypePath};
+use ::errors::*;
 
 use std::rc::Rc;
 use std::cell::RefCell;

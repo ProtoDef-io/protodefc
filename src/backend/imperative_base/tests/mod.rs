@@ -1,4 +1,3 @@
-use ::spec_type_to_final_ast;
 use ::spec_to_final_compilation_unit;
 use super::size_of::generate_size_of;
 use super::serialize::generate_serialize;

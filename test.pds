@@ -1,0 +1,41 @@
+@type "integer"
+def_native("u8");
+
+@type "integer"
+def_native("u64");
+
+@native native {
+    property("trunc") => integer(size: "64", signed: "true");
+}
+@type "none"
+def_native("f64");
+
+def("position") => container {
+    field("x") => ::f64;
+    field("y") => ::f64;
+    field("z") => ::f64;
+};
+
+def("entity_data") => container {
+    field("entity_id") => ::u64;
+    field("position") => ::position;
+    virtual_field("entity_type_tag", ref: "entity_type", prop: "tag") => ::u8;
+    field("entity_type") => union("entity_type", ref: "../entity_type_tag") {
+        variant("player", match: "0") => container {};
+        variant("zombie", match: "1") => container {};
+    };
+};
+
+def("packet") => container(virtual: "true") {
+    virtual_field("tag", ref: "data", prop: "tag") => ::u8;
+    field("data") => union("packet_variant", ref: "../tag") {
+        variant("handshake", match: "0") => container {
+            field("nonce") => ::u64;
+        };
+        variant("ping", match: "1") => container {
+            field("nonce") => ::u64;
+            field("timestamp") => ::u64;
+        };
+        variant("spawn_entity", match: "2") => ::entity_data;
+    };
+};

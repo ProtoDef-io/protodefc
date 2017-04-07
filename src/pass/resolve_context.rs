@@ -1,27 +1,20 @@
-use super::Result;
+use ::ir::typ::{Type, TypeContainer, CompilePass};
+use ::ir::compilation_unit::{CompilationUnit, TypePath,
+                             TypeKind, NamedTypeContainer};
+use ::errors::*;
 
-use ::{Type, TypeContainer};
-use ::ir::CompilePass;
-use ::context::compilation_unit::{CompilationUnit, TypePath,
-                                  TypeKind, NamedTypeContainer};
+pub fn run(cu: &CompilationUnit) -> Result<()> {
+    cu.each_type_traverse_node(&mut |ref named_type, ref node| {
+        let named_type_inner = named_type.borrow();
+        let mut node_inner = node.borrow_mut();
 
-pub fn run(typ: &NamedTypeContainer, compilation_unit: &CompilationUnit) -> Result<()> {
-    let borrowed = typ.borrow();
+        use ::std::ops::DerefMut;
+        let Type { ref mut data, ref mut variant } = *node_inner.deref_mut();
 
-    if let TypeKind::Type(ref container) = borrowed.typ {
-        super::traverse(container, &mut |typ| {
-            let mut inner = typ.borrow_mut();
+        let mut pass = CompilePass::ResolveReferencedTypes(
+            &named_type_inner.path, cu);
 
-            use ::std::ops::DerefMut;
-            let Type { ref mut data, ref mut variant } = *inner.deref_mut();
-
-            let mut pass = CompilePass::ResolveReferencedTypes(
-                &borrowed.path, compilation_unit);
-
-            variant.to_variant_mut()
-                .do_compile_pass(data, &mut pass)
-        })?;
-    }
-
-    Ok(())
+        variant.to_variant_mut()
+            .do_compile_pass(data, &mut pass)
+    })
 }

@@ -1,7 +1,8 @@
 extern crate protodefc;
 extern crate error_chain;
 
-use protodefc::TypeContainer;
+use protodefc::ir::typ::TypeContainer;
+use protodefc::ir::compilation_unit::CompilationUnit;
 use protodefc::errors::*;
 
 macro_rules! unwrap_ok {
@@ -27,16 +28,16 @@ macro_rules! unwrap_error {
     }
 }
 
-fn compile(spec: &str) -> Result<TypeContainer> {
-    let ast = protodefc::frontend::protocol_spec::ast::parser::parse(spec)?;
-    let mut ir = protodefc::frontend::protocol_spec::to_ir::type_def_to_ir(&ast.statements[0])?;
-    protodefc::run_passes(&mut ir)?;
-    Ok(ir)
+fn compile(spec: &str) -> Result<CompilationUnit> {
+    protodefc::spec_to_final_compilation_unit(spec)
 }
 
 #[test]
 fn simple_container() {
     unwrap_ok!(compile(r#"
+@type "integer"
+def_native("u8");
+
 def("test") => container {
     field("field_1") => u8;
 };
@@ -46,6 +47,9 @@ def("test") => container {
 #[test]
 fn container_virtual_field() {
     unwrap_ok!(compile(r#"
+@type "integer"
+def_native("u8");
+
 def("test") => container {
     virtual_field("field_1", ref: "field_2", prop: "length") => u8;
     field("field_2") => array(ref: "../field_1") => u8;
@@ -56,6 +60,9 @@ def("test") => container {
 #[test]
 fn container_virtual_field_nonexistent_ref() {
     unwrap_error!(compile(r#"
+@type "integer"
+def_native("u8");
+
 def("test") => container {
     virtual_field("field_1", ref: "field_2", prop: "length") => u8;
 };

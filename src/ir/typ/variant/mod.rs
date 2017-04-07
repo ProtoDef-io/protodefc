@@ -1,5 +1,5 @@
 use super::{TypeVariant, TypeData};
-use ::context::compilation_unit::TypePath;
+use ::ir::compilation_unit::TypePath;
 
 macro_rules! default_resolve_child_name_impl {
     () => {

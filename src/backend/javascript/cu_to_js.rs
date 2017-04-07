@@ -1,5 +1,5 @@
 use ::errors::*;
-use ::context::compilation_unit::{CompilationUnit, TypeKind};
+use ::ir::compilation_unit::{CompilationUnit, TypeKind};
 use super::builder::Block;
 use itertools::Itertools;
 

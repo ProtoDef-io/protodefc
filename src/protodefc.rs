@@ -18,6 +18,11 @@ fn main() {
              (@arg INPUT: +required "Sets the input file")
              (@arg OUTPUT: +required "Sets the output file")
             )
+            (@subcommand old_protodef_to_pds =>
+             (about: "Converts a protocol.json in the old format into a (likely invalid) PDS file.")
+             (@arg INPUT: +required "Sets the input file")
+             (@arg OUTPUT: +required "Sets the output file")
+            )
     ).get_matches();
 
     if let Some(ref matches) = matches.subcommand_matches("compile") {
@@ -34,6 +39,22 @@ fn main() {
 
         let mut output_file = File::create(output_file).unwrap();
         output_file.write(js.as_bytes());
+
+    }
+
+    if let Some(ref matches) = matches.subcommand_matches("old_protodef_to_pds") {
+
+        let input_file = matches.value_of("INPUT").unwrap();
+        let output_file = matches.value_of("OUTPUT").unwrap();
+
+        let mut input_file = File::open(input_file).unwrap();
+        let mut input_str = String::new();
+        input_file.read_to_string(&mut input_str).unwrap();
+
+        let out = protodefc::old_protocol_json_to_pds::convert(&input_str).unwrap();
+
+        let mut output_file = File::create(output_file).unwrap();
+        output_file.write(out.as_bytes());
 
     }
 

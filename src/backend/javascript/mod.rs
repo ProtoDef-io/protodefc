@@ -10,7 +10,7 @@ pub mod cu_to_js;
 #[cfg(all(test, feature = "js_tests"))]
 mod tests;
 
-use ::context::compilation_unit::CompilationUnit;
+use ::ir::compilation_unit::CompilationUnit;
 use ::errors::*;
 use self::builder::ToJavascript;
 pub fn compilation_unit_to_javascript(cu: &CompilationUnit) -> Result<String> {

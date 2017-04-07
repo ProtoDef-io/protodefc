@@ -1,11 +1,10 @@
-use super::Result;
+use ::errors::*;
 
-use ::{Type, TypeContainer};
-use ::ir::CompilePass;
-use ::context::compilation_unit::{CompilationUnit, TypePath,
-                                  TypeKind, NamedTypeContainer};
+use ::ir::typ::{Type, TypeContainer, CompilePass};
+use ::ir::compilation_unit::{CompilationUnit, TypePath,
+                             TypeKind, NamedTypeContainer};
 
-pub fn run(context: &CompilationUnit) -> Result<()> {
+pub fn run(cu: &CompilationUnit) -> Result<()> {
     let mut has_changed = true;
 
     while has_changed {
@@ -15,23 +14,15 @@ pub fn run(context: &CompilationUnit) -> Result<()> {
             has_changed: &mut has_changed,
         };
 
-        context.each_type(&mut |typ| {
-            let borrowed = typ.borrow();
+        cu.each_type_traverse_node(&mut |_, node| {
+            let mut node_inner = node.borrow_mut();
 
-            if let TypeKind::Type(ref container) = borrowed.typ {
-                super::traverse(container, &mut |typ| {
-                    let mut inner = typ.borrow_mut();
+            use ::std::ops::DerefMut;
+            let Type { ref mut data, ref mut variant } = *node_inner.deref_mut();
 
-                    use ::std::ops::DerefMut;
-                    let Type { ref mut data, ref mut variant } = *inner.deref_mut();
-
-                    variant.to_variant_mut()
-                        .do_compile_pass(data, &mut pass)
-                })
-            } else {
-                Ok(())
-            }
-        })?;
+            variant.to_variant_mut()
+                .do_compile_pass(data, &mut pass)
+        })?
     }
 
     Ok(())

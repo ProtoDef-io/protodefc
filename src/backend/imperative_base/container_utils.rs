@@ -1,6 +1,7 @@
 use ::errors::*;
-use ::ir::{Type, TypeVariant, TypeData, TypeContainer, FieldPropertyReference};
-use ::ir::variant::{Variant, SimpleScalarVariant, ContainerVariant, ContainerField, ContainerFieldType, ArrayVariant, UnionVariant};
+use ::ir::{FieldPropertyReference};
+use ::ir::typ::{Type, TypeVariant, TypeData, TypeContainer};
+use ::ir::typ::variant::*;
 use super::*;
 use super::utils::*;
 

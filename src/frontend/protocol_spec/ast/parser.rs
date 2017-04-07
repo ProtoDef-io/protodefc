@@ -13,6 +13,15 @@ pub fn parse(input: &str) -> Result<Block> {
     }
 }
 
+pub fn parse_ident(input: &str) -> Result<Ident> {
+    match identifier(input) {
+        IResult::Done(_, out) => Ok(out),
+        IResult::Error(err) =>
+            bail!(CompilerError::NomParseError(error_to_pos(&err, input.len()))),
+        IResult::Incomplete(_) => unreachable!(),
+    }
+}
+
 fn error_to_pos(err: &NomErr<&str>, input_len: usize) -> NomErr<usize> {
     match *err {
         NomErr::Code(ref kind) => NomErr::Code(kind.clone()),

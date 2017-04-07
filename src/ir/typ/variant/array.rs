@@ -1,7 +1,7 @@
-use ::{TypeVariant, TypeData, Type, WeakTypeContainer, Result, TypeContainer};
-use ::ir::{TargetType, CompilePass};
-use ::FieldReference;
-use ::context::compilation_unit::{CompilationUnit, TypePath};
+use ::errors::*;
+use ::ir::{TargetType, FieldReference};
+use ::ir::typ::{TypeVariant, TypeData, Type, WeakTypeContainer, TypeContainer, CompilePass};
+use ::ir::compilation_unit::{CompilationUnit, TypePath};
 use super::{Variant, VariantType};
 
 use std::rc::Rc;

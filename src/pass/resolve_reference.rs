@@ -1,16 +1,21 @@
-use super::Result;
-
-use ::{Type, TypeContainer, TypeVariant, TypeData, WeakTypeContainer, CompilerError};
-use ::ir::CompilePass;
+use ::ir::typ::{Type, TypeContainer, TypeVariant, TypeData, WeakTypeContainer, CompilePass};
+use ::ir::compilation_unit::{CompilationUnit, TypeKind};
+use ::ir::FieldReference;
 use ::errors::*;
-use ::FieldReference;
 
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 
-pub fn run(typ: &TypeContainer) -> Result<()> {
-    let mut parents: Vec<WeakTypeContainer> = Vec::new();
-    do_run(typ, &mut parents)
+pub fn run(cu: &CompilationUnit) -> Result<()> {
+    cu.each_type(&mut |typ| {
+        let mut parents: Vec<WeakTypeContainer> = Vec::new();
+        let mut named_typ_inner = typ.borrow();
+        if let TypeKind::Type(ref root_node) = named_typ_inner.typ {
+            do_run(root_node, &mut parents)?
+        };
+        Ok(())
+    })
+
 }
 
 fn do_run(typ: &TypeContainer, parents: &mut Vec<WeakTypeContainer>)
