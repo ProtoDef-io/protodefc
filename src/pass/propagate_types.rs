@@ -1,6 +1,6 @@
 use ::errors::*;
 
-use ::ir::typ::{Type, TypeContainer, CompilePass};
+use ::ir::spec::{Type, TypeContainer, CompilePass};
 use ::ir::compilation_unit::{CompilationUnit, TypePath,
                              TypeKind, NamedTypeContainer};
 

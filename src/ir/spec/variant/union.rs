@@ -1,8 +1,9 @@
 use ::errors::*;
 
 use ::ir::{TargetType, FieldReference};
-use ::ir::typ::{TypeVariant, TypeData, Type, WeakTypeContainer, TypeContainer, CompilePass};
-use ::ir::typ::variant::{Variant, VariantType};
+use ::ir::spec::{TypeVariant, TypeData, Type, WeakTypeContainer, TypeContainer, CompilePass};
+use ::ir::spec::variant::{Variant, VariantType};
+use ::ir::spec::data::SpecChildHandle;
 use ::ir::compilation_unit::{CompilationUnit, TypePath};
 
 use std::rc::Rc;
@@ -24,6 +25,7 @@ pub struct UnionCase {
     pub match_val_str: String,
     pub case_name: String,
     pub child: WeakTypeContainer,
+    pub child_handle: SpecChildHandle,
 }
 
 impl TypeVariant for UnionVariant {
@@ -99,17 +101,18 @@ impl UnionVariantBuilder {
 
     pub fn case(&mut self, match_val_str: String, case_name: String,
                 child: TypeContainer) {
+        let case_handle = self.typ.data.add_child(child.clone());
         match self.typ.variant {
             Variant::Union(ref mut variant) => {
                 variant.cases.push(UnionCase {
                     match_val_str: match_val_str,
                     case_name: case_name,
                     child: child.downgrade(),
+                    child_handle: case_handle,
                 });
             }
             _ => unreachable!(),
         }
-        self.typ.data.children.push(child);
     }
 
     pub fn build(self) -> ::std::result::Result<TypeContainer, String> {

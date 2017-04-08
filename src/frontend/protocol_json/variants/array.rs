@@ -1,6 +1,6 @@
 use ::ir::FieldReference;
-use ::ir::typ::TypeContainer;
-use ::ir::typ::variant::{ArrayVariant, ContainerVariantBuilder};
+use ::ir::spec::TypeContainer;
+use ::ir::spec::variant::{ArrayVariant, ContainerVariantBuilder};
 use ::ir::compilation_unit::TypePath;
 
 use ::json::JsonValue;

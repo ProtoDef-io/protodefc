@@ -17,12 +17,12 @@ pub fn print(typ: &Type, fmt: &mut fmt::Formatter, depth: u64) -> Result<(), fmt
     typ.data.name.fmt(fmt)?;
     fmt.write_str(", ")?;
     typ.variant.fmt(fmt)?;
-    if typ.data.children.len() == 0 {
+    if typ.data.get_children().len() == 0 {
         fmt.write_str(" );\n")?;
     } else {
         fmt.write_str(" ) {\n")?;
 
-        for child in &typ.data.children {
+        for child in typ.data.get_children().iter() {
             match child.try_borrow() {
                 Ok(borrow) => {
                     print(&borrow, fmt, depth+1)?;

@@ -1,11 +1,9 @@
 use ::errors::*;
 
-use std::any::Any;
-use std::fmt::Debug;
-
 pub mod compilation_unit;
-pub mod typ;
+pub mod spec;
 pub mod type_spec;
+pub mod name;
 
 mod field_property_reference;
 mod field_reference;

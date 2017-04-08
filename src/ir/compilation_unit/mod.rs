@@ -132,9 +132,7 @@ impl CompilationUnit {
         fn traverse_type<I>(cont: &NamedTypeContainer, typ: &TypeContainer, f: &mut I) -> Result<()>
             where I: FnMut(&NamedTypeContainer, &TypeContainer) -> Result<()> {
 
-            let children = {
-                typ.borrow().data.children.clone()
-            };
+            let children = typ.borrow().data.get_owned_children();
 
             f(cont, typ)?;
 

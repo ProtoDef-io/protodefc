@@ -1,7 +1,7 @@
 use ::errors::*;
 use ::ir::TargetType;
-use ::ir::typ::{TypeVariant, TypeData, WeakTypeContainer, CompilePass};
-use ::ir::typ::variant::VariantType;
+use ::ir::spec::{TypeVariant, TypeData, WeakTypeContainer, CompilePass};
+use ::ir::spec::variant::VariantType;
 use ::ir::compilation_unit::{CompilationUnit, TypePath};
 
 #[derive(Debug)]

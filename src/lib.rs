@@ -7,6 +7,8 @@ extern crate json;
 extern crate nom;
 extern crate rustache;
 extern crate itertools;
+#[macro_use]
+extern crate matches;
 
 pub mod ir;
 pub mod backend;
@@ -19,7 +21,7 @@ pub mod old_protocol_json_to_pds;
 
 use errors::*;
 
-use ir::typ::TypeContainer;
+use ir::spec::TypeContainer;
 use ir::compilation_unit::CompilationUnit;
 
 pub fn spec_to_final_compilation_unit(spec: &str) -> Result<CompilationUnit> {

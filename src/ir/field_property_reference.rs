@@ -1,5 +1,5 @@
 use ::ir::FieldReference;
-use ::ir::typ::WeakTypeContainer;
+use ::ir::spec::WeakTypeContainer;
 
 #[derive(Debug)]
 /// Used to reference a specific property of another field.

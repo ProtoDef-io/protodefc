@@ -1,4 +1,4 @@
-use ::ir::typ::{TypeContainer, TypeData};
+use ::ir::spec::{TypeContainer, TypeData};
 
 pub fn input_for(data: &TypeData) -> String {
     format!("type_input_{}", data.ident.unwrap())

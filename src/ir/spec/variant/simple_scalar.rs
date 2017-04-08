@@ -1,8 +1,8 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use ::ir::TargetType;
-use ::ir::typ::{Type, TypeVariant, TypeData, WeakTypeContainer, TypeContainer, CompilePass};
-use ::ir::typ::variant::{Variant, VariantType};
+use ::ir::spec::{Type, TypeVariant, TypeData, WeakTypeContainer, TypeContainer, CompilePass};
+use ::ir::spec::variant::{Variant, VariantType};
 use ::ir::compilation_unit::{CompilationUnit, TypePath, NamedTypeContainer};
 use ::errors::*;
 

@@ -1,6 +1,6 @@
 use ::errors::*;
-use ::ir::typ::{Type, TypeVariant, TypeData, TypeContainer};
-use ::ir::typ::variant::*;
+use ::ir::spec::{Type, TypeVariant, TypeData, TypeContainer};
+use ::ir::spec::variant::*;
 use super::*;
 use super::utils::*;
 use super::container_utils::*;

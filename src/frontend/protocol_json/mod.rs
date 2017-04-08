@@ -1,5 +1,5 @@
-use ::ir::typ::{Type, TypeVariant, TypeContainer};
-use ::ir::typ::variant::{SimpleScalarVariant, ContainerVariant};
+use ::ir::spec::{Type, TypeVariant, TypeContainer};
+use ::ir::spec::variant::{SimpleScalarVariant, ContainerVariant};
 
 use ::json::JsonValue;
 use self::variants::{ScalarReader, ContainerReader, ArrayReader, UnionReader};

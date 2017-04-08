@@ -3,6 +3,11 @@ use ::errors::*;
 pub mod variant;
 use self::variant::VariantType;
 
+pub mod reference;
+
+pub mod data;
+pub use self::data::TypeData;
+
 mod debug_printer;
 
 use std::any::Any;
@@ -20,31 +25,6 @@ pub struct Type {
     pub variant: self::variant::Variant,
 }
 
-#[derive(Debug)]
-pub struct TypeData {
-    pub name: TypePath,
-    pub children: Vec<TypeContainer>,
-
-    /// Added in AssignParentPass
-    pub parent: Option<WeakTypeContainer>,
-
-    /// Added in AssignIdentPass
-    /// Idents increase with causality.
-    pub ident: Option<u64>,
-}
-
-impl Default for TypeData {
-    fn default() -> TypeData {
-        TypeData {
-            name: TypePath::with_no_ns("".to_owned()),
-            children: Vec::new(),
-
-            parent: None,
-            ident: None,
-        }
-    }
-}
-
 pub type ReferenceResolver = Fn(&TypeVariant, &TypeData, &FieldReference)
                                 -> Result<WeakTypeContainer>;
 
@@ -60,7 +40,7 @@ pub trait TypeVariant: Debug + Any {
     fn has_property(&self, data: &TypeData, prop_name: &str) -> Option<TargetType>;
 
     /// Used by the compiler to determine if the type can be used
-    /// as a count / in a union.
+
     fn get_result_type(&self, data: &TypeData) -> Option<TargetType>;
 
     /// Used by the resolve_reference pass to fetch a named child

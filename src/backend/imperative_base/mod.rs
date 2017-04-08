@@ -125,13 +125,13 @@ impl From<String> for Var {
 
 trait BaseCodegen : size_of::BaseSizeOf + serialize::BaseSerialize + deserialize::BaseDeserialize {}
 
-impl BaseCodegen for ::ir::typ::variant::SimpleScalarVariant {}
-impl BaseCodegen for ::ir::typ::variant::ContainerVariant {}
-impl BaseCodegen for ::ir::typ::variant::ArrayVariant {}
-impl BaseCodegen for ::ir::typ::variant::UnionVariant {}
+impl BaseCodegen for ::ir::spec::variant::SimpleScalarVariant {}
+impl BaseCodegen for ::ir::spec::variant::ContainerVariant {}
+impl BaseCodegen for ::ir::spec::variant::ArrayVariant {}
+impl BaseCodegen for ::ir::spec::variant::UnionVariant {}
 
-fn codegen_for_type<'a>(typ: &'a ::ir::typ::Type) -> &'a BaseCodegen {
-    use ::ir::typ::variant::Variant;
+fn codegen_for_type<'a>(typ: &'a ::ir::spec::Type) -> &'a BaseCodegen {
+    use ::ir::spec::variant::Variant;
     match typ.variant {
         Variant::SimpleScalar(ref inner) => inner,
         Variant::Container(ref inner) => inner,

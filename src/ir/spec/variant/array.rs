@@ -1,6 +1,7 @@
 use ::errors::*;
 use ::ir::{TargetType, FieldReference};
-use ::ir::typ::{TypeVariant, TypeData, Type, WeakTypeContainer, TypeContainer, CompilePass};
+use ::ir::spec::{TypeVariant, TypeData, Type, WeakTypeContainer, TypeContainer, CompilePass};
+use ::ir::spec::data::SpecChildHandle;
 use ::ir::compilation_unit::{CompilationUnit, TypePath};
 use super::{Variant, VariantType};
 
@@ -14,7 +15,7 @@ pub struct ArrayVariant {
     pub count: Option<WeakTypeContainer>,
 
     pub child: WeakTypeContainer,
-    pub child_index: usize,
+    pub child_handle: SpecChildHandle,
 }
 impl TypeVariant for ArrayVariant {
     default_resolve_child_name_impl!();
@@ -59,7 +60,9 @@ impl ArrayVariant {
     pub fn new(count_ref: FieldReference, child: TypeContainer) -> TypeContainer {
         let mut data = TypeData::default();
         data.name = TypePath::with_no_ns("array".to_owned());
-        data.children.push(child.clone());
+
+        let child_handle = data.add_child(child.clone());
+        //let count_reference_handle = data.add_reference(count_ref);
 
         TypeContainer::new(Type {
             variant: Variant::Array(ArrayVariant {
@@ -67,7 +70,7 @@ impl ArrayVariant {
                 count_path: count_ref,
 
                 child: child.downgrade(),
-                child_index: 0,
+                child_handle: child_handle,
             }),
             data: data,
         })

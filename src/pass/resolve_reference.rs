@@ -1,5 +1,6 @@
-use ::ir::typ::{Type, TypeContainer, TypeVariant, TypeData, WeakTypeContainer, CompilePass};
+use ::ir::spec::{Type, TypeContainer, TypeVariant, TypeData, WeakTypeContainer, CompilePass};
 use ::ir::compilation_unit::{CompilationUnit, TypeKind};
+use ::ir::spec::data::SpecChildHandle;
 use ::ir::FieldReference;
 use ::errors::*;
 
@@ -47,10 +48,10 @@ fn do_run(typ: &TypeContainer, parents: &mut Vec<WeakTypeContainer>)
     };
 
     let chain;
-    let mut children;
+    let mut children: Vec<TypeContainer>;
     {
         let mut inner = typ.borrow_mut();
-        children = inner.data.children.clone();
+        children = inner.data.get_owned_children();
 
         chain = CompilerError::InsideVariant {
             variant: inner.variant.get_type(&inner.data),

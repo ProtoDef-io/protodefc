@@ -15,6 +15,7 @@ nom = { version = "2.1.0", features = ["verbose-errors"] }
 rustache = "0.1.0"
 itertools = "0.5.9"
 clap = "2.22.2"
+matches = "0.1.4"
 
 [lib]
 name = "protodefc"

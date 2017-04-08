@@ -1,9 +1,9 @@
 use ::ir::FieldPropertyReference;
-use ::ir::typ::TypeContainer;
+use ::ir::spec::TypeContainer;
 use ::errors::*;
 use ::ir::TargetType;
 use ::ir::compilation_unit::TypePath;
-use ::ir::typ::variant::*;
+use ::ir::spec::variant::*;
 
 use super::ast::{Ident, Statement, Value};
 

@@ -1,6 +1,7 @@
 use ::ir::{TargetType, FieldPropertyReference};
-use ::ir::typ::{TypeVariant, TypeData, Type, WeakTypeContainer, TypeContainer, CompilePass};
-use ::ir::typ::variant::{Variant, VariantType};
+use ::ir::spec::{TypeVariant, TypeData, Type, WeakTypeContainer, TypeContainer, CompilePass};
+use ::ir::spec::data::SpecChildHandle;
+use ::ir::spec::variant::{Variant, VariantType};
 use ::ir::compilation_unit::{CompilationUnit, TypePath};
 use ::errors::*;
 
@@ -86,7 +87,7 @@ pub struct ContainerField {
     pub name: String,
 
     pub child: WeakTypeContainer,
-    pub child_index: usize,
+    pub child_handle: SpecChildHandle,
 
     pub field_type: ContainerFieldType,
 }
@@ -145,8 +146,7 @@ impl ContainerVariantBuilder {
     }
 
     pub fn field(&mut self, name: String, typ: TypeContainer, container_type: ContainerFieldType) {
-        let idx = self.typ.data.children.len();
-        self.typ.data.children.push(typ.clone());
+        let child_handle = self.typ.data.add_child(typ.clone());
 
         match container_type {
             ContainerFieldType::Normal => self.num_non_virt_fields += 1,
@@ -158,7 +158,7 @@ impl ContainerVariantBuilder {
                 variant.fields.push(ContainerField {
                     name: name,
                     child: typ.downgrade(),
-                    child_index: idx,
+                    child_handle: child_handle,
                     field_type: container_type,
                 });
             }

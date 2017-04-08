@@ -21,7 +21,7 @@ fn do_run(typ: &TypeContainer, current_id: &mut u64) -> Result<()> {
 
     *current_id += 1;
 
-    for mut child in &mut inner.data.children {
+    for mut child in &mut inner.data.get_children().iter() {
         do_run(&mut child, current_id)?;
     }
 

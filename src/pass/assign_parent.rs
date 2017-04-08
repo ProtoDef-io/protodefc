@@ -1,5 +1,5 @@
 use ::errors::Result;
-use ::ir::typ::{Type, TypeContainer, WeakTypeContainer};
+use ::ir::spec::{Type, TypeContainer, WeakTypeContainer};
 use ::ir::compilation_unit::{CompilationUnit, TypeKind};
 
 use std::rc::{Rc, Weak};
@@ -19,7 +19,7 @@ fn do_run(typ: &TypeContainer, parent: Option<WeakTypeContainer>) -> Result<()> 
     let mut inner = typ.borrow_mut();
     inner.data.parent = parent;
 
-    for mut child in &mut inner.data.children {
+    for mut child in &mut inner.data.get_children().iter() {
         do_run(&mut child, Some(typ.downgrade()))?;
     }
 

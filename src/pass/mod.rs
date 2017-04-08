@@ -11,11 +11,7 @@ pub mod propagate_types;
 pub fn traverse<F>(typ: &TypeContainer, f: &mut F) -> Result<()>
     where F: FnMut(&TypeContainer) -> Result<()> {
 
-    let children;
-    {
-        let inner = typ.borrow();
-        children = inner.data.children.clone();
-    }
+    let children = typ.borrow().data.get_owned_children();
 
     f(typ)?;
 

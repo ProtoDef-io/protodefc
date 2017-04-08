@@ -1,5 +1,5 @@
-use ::ir::typ::TypeContainer;
-use ::ir::typ::variant::SimpleScalarVariant;
+use ::ir::spec::TypeContainer;
+use ::ir::spec::variant::SimpleScalarVariant;
 use super::FromProtocolJson;
 use ::json::JsonValue;
 use ::errors::*;

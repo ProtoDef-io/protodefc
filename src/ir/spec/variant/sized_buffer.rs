@@ -1,17 +1,17 @@
 use ::errors::*;
-use ::ir::TargetType;
-use ::ir::typ::{TypeVariant, TypeData, WeakTypeContainer, CompilePass};
-use ::ir::typ::variant::VariantType;
+use ::ir::{TargetType, FieldReference};
+use ::ir::spec::{TypeVariant, TypeData, WeakTypeContainer, CompilePass};
+use super::VariantType;
 use ::ir::compilation_unit::{CompilationUnit, TypePath};
 
 #[derive(Debug)]
-pub struct ErrorVariant {
-    pub message: String,
+pub struct SizedBufferVariant {
+    count_ref: FieldReference,
 }
-impl TypeVariant for ErrorVariant {
+impl TypeVariant for SizedBufferVariant {
 
     fn get_type(&self, _data: &TypeData) -> VariantType {
-        VariantType::Error
+        VariantType::TerminatedBuffer
     }
 
     default_resolve_child_name_impl!();

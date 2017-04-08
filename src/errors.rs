@@ -1,5 +1,6 @@
-use ::ir::typ::variant::VariantType;
+use ::ir::spec::variant::VariantType;
 use ::ir::FieldReference;
+
 
 error_chain! {
     links {
@@ -82,5 +83,21 @@ impl From<CompilerError> for Error {
 impl From<CompilerError> for ErrorKind {
     fn from(typ: CompilerError) -> ErrorKind {
         ErrorKind::CompilerError(typ).into()
+    }
+}
+
+use ::nom::IResult;
+use ::nom::verbose_errors::Err as NomErr;
+
+pub fn nom_error_to_pos(err: &NomErr<&str>, input_len: usize) -> NomErr<usize> {
+    match *err {
+        NomErr::Code(ref kind) => NomErr::Code(kind.clone()),
+        NomErr::Node(ref kind, ref next) =>
+            NomErr::Node(kind.clone(), Box::new(nom_error_to_pos(&**next, input_len))),
+        NomErr::Position(ref kind, ref pos) =>
+            NomErr::Position(kind.clone(), input_len-pos.len()),
+        NomErr::NodePosition(ref kind, ref pos, ref next) =>
+            NomErr::NodePosition(kind.clone(), input_len-pos.len(),
+                                 Box::new(nom_error_to_pos(&**next, input_len))),
     }
 }

@@ -1,7 +1,7 @@
 extern crate protodefc;
 extern crate error_chain;
 
-use protodefc::ir::typ::TypeContainer;
+use protodefc::ir::spec::TypeContainer;
 use protodefc::ir::compilation_unit::CompilationUnit;
 use protodefc::errors::*;
 
