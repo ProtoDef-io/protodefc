@@ -1,16 +1,11 @@
 use ::errors::*;
 
-use ::ir::TargetType;
 use ::ir::spec::{TypeVariant, TypeData, Type, WeakTypeContainer, TypeContainer, CompilePass};
 use ::ir::spec::variant::{Variant, VariantType};
-use ::ir::spec::data::{SpecChildHandle, SpecReferenceHandle};
+use ::ir::spec::data::{SpecChildHandle, SpecReferenceHandle, ReferenceAccessTime};
 use ::ir::spec::reference::Reference;
-use ::ir::type_spec::{TypeSpecContainer, WeakTypeSpecContainer, TypeSpecVariant,
-                      EnumSpec, EnumVariantSpec, TypeSpec};
-use ::ir::compilation_unit::{CompilationUnit, TypePath};
-
-use std::rc::Rc;
-use std::cell::RefCell;
+use ::ir::type_spec::{WeakTypeSpecContainer, TypeSpecVariant,
+                      EnumSpec, EnumVariantSpec};
 
 #[derive(Debug)]
 pub struct UnionVariant {
@@ -79,7 +74,8 @@ impl UnionVariantBuilder {
     pub fn new(union_name: String, match_target: Reference)
                -> UnionVariantBuilder {
         let mut data = TypeData::default();
-        let match_target_handle = data.add_reference(match_target.clone());
+        let match_target_handle = data.add_reference(match_target.clone(),
+                                                     ReferenceAccessTime::Read);
 
         UnionVariantBuilder {
             typ: Type {

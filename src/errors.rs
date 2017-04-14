@@ -86,7 +86,6 @@ impl From<CompilerError> for ErrorKind {
     }
 }
 
-use ::nom::IResult;
 use ::nom::verbose_errors::Err as NomErr;
 
 pub fn nom_error_to_pos(err: &NomErr<&str>, input_len: usize) -> NomErr<usize> {

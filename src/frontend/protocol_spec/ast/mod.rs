@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use ::errors::*;
-use ::ir::compilation_unit::{NSPath, TypePath};
+use ::ir::compilation_unit::TypePath;
 use ::ir::spec::reference::Reference;
 
 pub mod parser;

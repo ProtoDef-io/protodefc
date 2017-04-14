@@ -1,10 +1,8 @@
 use ::errors::*;
-use ::ir::TargetType;
 use ::ir::spec::{TypeVariant, TypeData, WeakTypeContainer, CompilePass};
 use ::ir::spec::reference::Reference;
-use ::ir::type_spec::{TypeSpecContainer, TypeSpecVariant, WeakTypeSpecContainer};
+use ::ir::type_spec::WeakTypeSpecContainer;
 use super::VariantType;
-use ::ir::compilation_unit::{CompilationUnit, TypePath};
 
 #[derive(Debug)]
 pub struct SizedBufferVariant {
@@ -19,7 +17,7 @@ impl TypeVariant for SizedBufferVariant {
     default_resolve_child_name_impl!();
     default_has_property_impl!();
 
-    fn do_compile_pass(&mut self, data: &mut TypeData, pass: &mut CompilePass)
+    fn do_compile_pass(&mut self, _data: &mut TypeData, pass: &mut CompilePass)
                        -> Result<()> {
         match *pass {
             CompilePass::MakeTypeSpecs => {

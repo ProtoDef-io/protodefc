@@ -3,7 +3,6 @@ use ::ir::spec::{TypeVariant, TypeData, TypeContainer};
 use ::ir::spec::variant::*;
 use super::*;
 use super::utils::*;
-use super::container_utils::*;
 use super::reference::build_reference_accessor;
 
 pub fn generate_deserialize(typ: TypeContainer) -> Result<Block> {
@@ -41,7 +40,7 @@ impl BaseDeserialize for ContainerVariant {
     fn deserialize(&self, data: &TypeData) -> Result<Block> {
         let mut ops: Vec<Operation> = Vec::new();
 
-        for (idx, field) in self.fields.iter().enumerate() {
+        for (_idx, field) in self.fields.iter().enumerate() {
             let child_typ = field.child.upgrade();
 
             ops.push(Operation::Block(generate_deserialize(child_typ)?));

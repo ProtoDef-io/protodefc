@@ -1,7 +1,5 @@
 use ::ir::spec::TypeContainer;
 use ::errors::*;
-use ::ir::TargetType;
-use ::ir::compilation_unit::TypePath;
 use ::ir::spec::variant::*;
 use ::ir::spec::reference::Reference;
 

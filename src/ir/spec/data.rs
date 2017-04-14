@@ -26,8 +26,15 @@ pub struct SpecChildHandle(usize);
 #[derive(Debug, Copy, Clone)]
 pub struct SpecReferenceHandle(usize);
 
+#[derive(Debug, Copy, Clone)]
+pub enum ReferenceAccessTime {
+    Read,
+    ReadWrite,
+}
+
 #[derive(Debug, Clone)]
 pub struct ReferenceData {
+    pub access_time: ReferenceAccessTime,
     pub reference: Reference,
     pub path: Option<Vec<ReferencePathEntryData>>,
 }
@@ -64,11 +71,13 @@ impl TypeData {
         self.get_children().into()
     }
 
-    pub fn add_reference(&mut self, reference: Reference) -> SpecReferenceHandle {
+    pub fn add_reference(&mut self, reference: Reference,
+                         access_time: ReferenceAccessTime) -> SpecReferenceHandle {
         let index = self.references.len();
         self.references.push(ReferenceData {
             reference: reference,
             path: None,
+            access_time: access_time,
         });
         SpecReferenceHandle(index)
     }

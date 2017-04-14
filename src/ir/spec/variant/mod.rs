@@ -1,6 +1,5 @@
 use super::{TypeVariant, TypeData};
 use ::ir::compilation_unit::TypePath;
-use ::ir::type_spec::WeakTypeSpecContainer;
 
 macro_rules! default_resolve_child_name_impl {
     () => {

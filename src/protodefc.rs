@@ -2,7 +2,6 @@ extern crate protodefc;
 
 #[macro_use]
 extern crate clap;
-use clap::{Arg, App, SubCommand};
 
 use std::fs::File;
 use std::io::{Read, Write};
@@ -38,7 +37,7 @@ fn main() {
         let js = protodefc::backend::javascript::compilation_unit_to_javascript(&cu).unwrap();
 
         let mut output_file = File::create(output_file).unwrap();
-        output_file.write(js.as_bytes());
+        output_file.write(js.as_bytes()).unwrap();
 
     }
 
@@ -54,7 +53,7 @@ fn main() {
         let out = protodefc::old_protocol_json_to_pds::convert(&input_str).unwrap();
 
         let mut output_file = File::create(output_file).unwrap();
-        output_file.write(out.as_bytes());
+        output_file.write(out.as_bytes()).unwrap();
 
     }
 

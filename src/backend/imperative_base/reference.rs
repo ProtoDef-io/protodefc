@@ -1,5 +1,5 @@
-use ::ir::spec::{TypeContainer, TypeData, Type, TypeVariant};
-use ::ir::spec::reference::{Reference, ReferenceItem};
+use ::ir::spec::{TypeData, TypeVariant};
+use ::ir::spec::reference::ReferenceItem;
 use ::ir::spec::data::SpecReferenceHandle;
 use super::{Var, Block, Operation, Expr, MapOperation};
 use super::utils::*;
@@ -35,9 +35,9 @@ pub fn build_reference_accessor(variant: &TypeVariant, data: &TypeData,
     build_reference_accessor_inner(variant, data, reference_handle, output_var, is_read)
 }
 
-fn build_reference_accessor_inner(variant: &TypeVariant, data: &TypeData,
+fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                                   reference_handle: SpecReferenceHandle,
-                                  output_var: Var, is_read: bool) -> Block {
+                                  output_var: Var, _is_read: bool) -> Block {
     let reference = data.get_reference(reference_handle);
     println!("Reference: {:?}", reference);
 

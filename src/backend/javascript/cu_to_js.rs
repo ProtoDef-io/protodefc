@@ -56,7 +56,6 @@ pub fn generate_compilation_unit(cu: &CompilationUnit) -> Result<Block> {
                     format!("types[\"{}\"][\"deserialize\"]", typ_ns_name).into()
                 );
             }
-            _ => (),
         }
     }
 

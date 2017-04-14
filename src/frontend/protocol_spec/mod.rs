@@ -9,7 +9,6 @@ use ::ir::IdGenerator;
 use ::errors::*;
 use ::ir::type_spec::{TypeSpecVariant, IntegerSpec, IntegerSize, Signedness};
 
-use ::ir::TargetType;
 pub use self::ast::parser::parse;
 pub use self::to_ir::type_def_to_ir;
 

@@ -171,7 +171,6 @@ fn build_expr(expr: &ib::Expr) -> Result<Expr> {
             num.clone(),
         ib::Expr::ContainerField { ref value, ref field } =>
             format!("{}[{:?}]", build_expr(value)?.0, field),
-        _ => unimplemented!(),
     };
     Ok(res.into())
 }

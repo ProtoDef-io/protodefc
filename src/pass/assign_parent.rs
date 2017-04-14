@@ -1,9 +1,6 @@
 use ::errors::Result;
-use ::ir::spec::{Type, TypeContainer, WeakTypeContainer};
+use ::ir::spec::{TypeContainer, WeakTypeContainer};
 use ::ir::compilation_unit::{CompilationUnit, TypeKind};
-
-use std::rc::{Rc, Weak};
-use std::cell::RefCell;
 
 pub fn run(cu: &CompilationUnit) -> Result<()> {
     cu.each_type(&mut |named_typ| {

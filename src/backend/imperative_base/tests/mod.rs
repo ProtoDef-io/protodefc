@@ -1,9 +1,6 @@
 use ::spec_to_final_compilation_unit;
-use super::size_of::generate_size_of;
-use super::serialize::generate_serialize;
-
 fn test_compile(spec: &str) {
-    let ir = spec_to_final_compilation_unit(spec).unwrap();
+    let _ir = spec_to_final_compilation_unit(spec).unwrap();
     //let size_of = generate_size_of(ir.clone()).unwrap();
     //println!("{:?}", size_of);
     //let serialize = generate_serialize(ir.clone()).unwrap();

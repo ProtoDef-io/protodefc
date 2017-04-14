@@ -1,10 +1,8 @@
-use std::rc::Rc;
-use std::cell::RefCell;
 use ::ir::TargetType;
 use ::ir::spec::{Type, TypeVariant, TypeData, WeakTypeContainer, TypeContainer, CompilePass};
 use ::ir::spec::variant::{Variant, VariantType};
-use ::ir::type_spec::{TypeSpecContainer, TypeSpecVariant, WeakTypeSpecContainer};
-use ::ir::compilation_unit::{CompilationUnit, TypePath, NamedTypeContainer};
+use ::ir::type_spec::WeakTypeSpecContainer;
+use ::ir::compilation_unit::{TypePath, NamedTypeContainer};
 use ::errors::*;
 
 /// This is a simple terminal scalar.

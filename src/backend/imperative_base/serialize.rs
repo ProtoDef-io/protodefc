@@ -46,7 +46,7 @@ impl BaseSerialize for ContainerVariant {
             }
         }
 
-        for (idx, field) in self.fields.iter().enumerate() {
+        for (_idx, field) in self.fields.iter().enumerate() {
             let child_typ = field.child.upgrade();
             ops.push(Operation::Block(generate_serialize(child_typ)?));
         }

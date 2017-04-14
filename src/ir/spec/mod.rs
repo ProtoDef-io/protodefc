@@ -15,7 +15,7 @@ use std::fmt::Debug;
 
 use ::rc_container::{Container, WeakContainer};
 use ::ir::compilation_unit::{TypePath, CompilationUnit};
-use ::ir::type_spec::{TypeSpecContainer, WeakTypeSpecContainer};
+use ::ir::type_spec::WeakTypeSpecContainer;
 
 pub type TypeContainer = Container<Type>;
 pub type WeakTypeContainer = WeakContainer<Type>;

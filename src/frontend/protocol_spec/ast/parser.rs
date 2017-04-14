@@ -1,6 +1,5 @@
 use super::{Block, Statement, Value, Ident, Item, ItemArg};
 use ::nom::IResult;
-use ::nom::verbose_errors::Err as NomErr;
 
 use ::errors::*;
 

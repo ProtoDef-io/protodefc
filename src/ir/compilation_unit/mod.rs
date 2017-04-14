@@ -4,7 +4,6 @@ use itertools::Itertools;
 use ::std::fmt;
 
 use ::rc_container::{Container, WeakContainer};
-use ::ir::TargetType;
 use ::ir::type_spec::TypeSpecContainer;
 
 pub type NamedTypeContainer = Container<NamedType>;

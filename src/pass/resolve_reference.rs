@@ -1,12 +1,9 @@
-use ::ir::spec::{Type, TypeContainer, TypeVariant, TypeData, WeakTypeContainer, CompilePass};
+use ::ir::spec::{TypeContainer, WeakTypeContainer};
 use ::ir::compilation_unit::{CompilationUnit, TypeKind};
-use ::ir::spec::data::{SpecChildHandle, ReferencePathEntryData, ReferenceData,
+use ::ir::spec::data::{ReferencePathEntryData, ReferenceData,
                        ReferencePathEntryOperation};
-use ::ir::spec::reference::{Reference, ReferenceItem};
+use ::ir::spec::reference::ReferenceItem;
 use ::errors::*;
-
-use std::rc::{Rc, Weak};
-use std::cell::RefCell;
 
 pub fn run(cu: &CompilationUnit) -> Result<()> {
     cu.each_type(&mut |typ| {

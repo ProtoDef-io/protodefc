@@ -1,5 +1,5 @@
 use ::errors::*;
-use ::ir::spec::{Type, TypeVariant, TypeData, TypeContainer};
+use ::ir::spec::{TypeVariant, TypeData, TypeContainer};
 use ::ir::spec::variant::*;
 use super::*;
 use super::utils::*;
@@ -52,7 +52,7 @@ impl BaseSizeOf for ContainerVariant {
             }
         }
 
-        for (idx, field) in self.fields.iter().enumerate() {
+        for (_idx, field) in self.fields.iter().enumerate() {
             let child_typ = field.child.upgrade();
             ops.push(Operation::Block(generate_size_of(child_typ)?));
         }

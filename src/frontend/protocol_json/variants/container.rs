@@ -1,5 +1,5 @@
 use ::ir::spec::TypeContainer;
-use ::ir::spec::variant::{ContainerFieldType, ContainerVariantBuilder};
+use ::ir::spec::variant::ContainerVariantBuilder;
 use super::FromProtocolJson;
 use ::json::JsonValue;
 use ::errors::*;

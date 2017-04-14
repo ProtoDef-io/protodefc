@@ -1,15 +1,11 @@
 use ::errors::*;
-use ::ir::TargetType;
 use ::ir::spec::{TypeVariant, TypeData, Type, WeakTypeContainer, TypeContainer, CompilePass};
-use ::ir::spec::data::{SpecChildHandle, SpecReferenceHandle};
+use ::ir::spec::data::{SpecChildHandle, SpecReferenceHandle, ReferenceAccessTime};
 use ::ir::spec::reference::Reference;
 use ::ir::type_spec::{TypeSpecContainer, WeakTypeSpecContainer, TypeSpecVariant,
                       ArraySpec, ArraySize, IntegerSpec, Signedness, IntegerSize};
-use ::ir::compilation_unit::{CompilationUnit, TypePath};
+use ::ir::compilation_unit::TypePath;
 use super::{Variant, VariantType};
-
-use std::rc::Rc;
-use std::cell::RefCell;
 
 // Array
 #[derive(Debug)]
@@ -61,7 +57,8 @@ impl ArrayVariant {
         data.name = TypePath::with_no_ns("array".to_owned());
 
         let child_handle = data.add_child(child.clone());
-        let count_reference_handle = data.add_reference(count_ref.clone());
+        let count_reference_handle = data.add_reference(
+            count_ref.clone(), ReferenceAccessTime::Read);
 
         TypeContainer::new(Type {
             variant: Variant::Array(ArrayVariant {

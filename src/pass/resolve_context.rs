@@ -1,6 +1,5 @@
-use ::ir::spec::{Type, TypeContainer, CompilePass};
-use ::ir::compilation_unit::{CompilationUnit, TypePath,
-                             TypeKind, NamedTypeContainer};
+use ::ir::spec::{Type, CompilePass};
+use ::ir::compilation_unit::CompilationUnit;
 use ::errors::*;
 
 pub fn run(cu: &CompilationUnit) -> Result<()> {

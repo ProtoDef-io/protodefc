@@ -1,6 +1,6 @@
 use ::ir::spec::{TypeVariant, TypeData, Type, WeakTypeContainer, TypeContainer, CompilePass};
 use ::ir::spec::reference::Reference;
-use ::ir::spec::data::{SpecChildHandle, SpecReferenceHandle};
+use ::ir::spec::data::{SpecChildHandle, SpecReferenceHandle, ReferenceAccessTime};
 use ::ir::spec::variant::{Variant, VariantType};
 use ::ir::type_spec::{TypeSpecVariant, ContainerSpec, ContainerFieldSpec, WeakTypeSpecContainer};
 use ::errors::*;
@@ -110,7 +110,8 @@ impl ContainerVariantBuilder {
     }
 
     pub fn virtual_field(&mut self, name: String, typ: TypeContainer, value_ref: Reference) {
-        let handle = self.typ.data.add_reference(value_ref.clone());
+        let handle = self.typ.data.add_reference(
+            value_ref.clone(), ReferenceAccessTime::ReadWrite);
         self.field(name, typ, ContainerFieldType::Virtual {
             reference: value_ref,
             reference_handle: handle,
