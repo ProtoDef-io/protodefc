@@ -1,9 +1,12 @@
 use ::errors::*;
 
-use ::ir::{TargetType, FieldReference};
+use ::ir::TargetType;
 use ::ir::spec::{TypeVariant, TypeData, Type, WeakTypeContainer, TypeContainer, CompilePass};
 use ::ir::spec::variant::{Variant, VariantType};
-use ::ir::spec::data::SpecChildHandle;
+use ::ir::spec::data::{SpecChildHandle, SpecReferenceHandle};
+use ::ir::spec::reference::Reference;
+use ::ir::type_spec::{TypeSpecContainer, WeakTypeSpecContainer, TypeSpecVariant,
+                      EnumSpec, EnumVariantSpec, TypeSpec};
 use ::ir::compilation_unit::{CompilationUnit, TypePath};
 
 use std::rc::Rc;
@@ -13,17 +16,19 @@ use std::cell::RefCell;
 pub struct UnionVariant {
     pub union_name: String,
 
-    pub match_field_ref: FieldReference,
-    pub match_field: Option<WeakTypeContainer>,
-    pub match_type: Option<TargetType>,
+    pub match_target_ref: Reference,
+    pub match_target_handle: SpecReferenceHandle,
 
     pub cases: Vec<UnionCase>,
+
+    pub tag_property_type: Option<WeakTypeSpecContainer>,
 }
 
 #[derive(Debug)]
 pub struct UnionCase {
     pub match_val_str: String,
     pub case_name: String,
+
     pub child: WeakTypeContainer,
     pub child_handle: SpecChildHandle,
 }
@@ -31,11 +36,12 @@ pub struct UnionCase {
 impl TypeVariant for UnionVariant {
     default_resolve_child_name_impl!();
 
-    fn has_property(&self, _data: &TypeData, name: &str) -> Option<TargetType> {
+    fn has_spec_property(&self, _data: &TypeData, name: &str)
+                         -> Result<Option<WeakTypeSpecContainer>> {
         // TODO: Infer type
         match name {
-            "tag" => Some(TargetType::Integer),
-            _ => None,
+            "tag" => Ok(self.tag_property_type.clone()),
+            _ => bail!("union variant has no property '{}'", name),
         }
     }
 
@@ -43,35 +49,24 @@ impl TypeVariant for UnionVariant {
         VariantType::Union
     }
 
-    fn get_result_type(&self, _data: &TypeData) -> Option<TargetType> {
-        Some(TargetType::Enum)
-    }
-
     fn do_compile_pass(&mut self, data: &mut TypeData, pass: &mut CompilePass)
                        -> Result<()> {
         match *pass {
-            CompilePass::ResolveInternalReferences(ref resolver) => {
-                self.match_field = Some(resolver(self, data,
-                                                 &self.match_field_ref)?);
-
-                let match_field = self.match_field.clone().unwrap().upgrade();
-                let match_field_inner = match_field.borrow();
-                let match_field_type = match_field_inner.variant.to_variant()
-                    .get_result_type(&match_field_inner.data);
-
-                assert!(match_field_type != None, "results should be assigned at this stage of compilation");
-                let is_matchable = match_field_type.unwrap()
-                    != TargetType::Unknown;
-                ensure!(is_matchable, CompilerError::UnmatchableType {
-                    variant: match_field_inner.variant.get_type(
-                        &match_field_inner.data),
-                });
-
-                self.match_type = match_field_type;
-
+            CompilePass::MakeTypeSpecs => {
+                data.type_spec = Some(TypeSpecVariant::Enum(EnumSpec {
+                    name: self.union_name.clone().into(),
+                    variants: self.cases.iter().map(|c| {
+                        let child_rc = c.child.clone().upgrade();
+                        let child = child_rc.borrow();
+                        EnumVariantSpec {
+                            name: c.case_name.clone().into(),
+                            type_spec: child.data.type_spec.clone().unwrap(),
+                        }
+                    }).collect(),
+                }).into());
                 Ok(())
             }
-            _ => Ok(()),
+            _ => Ok(())
         }
     }
 }
@@ -81,19 +76,23 @@ pub struct UnionVariantBuilder {
 }
 impl UnionVariantBuilder {
 
-    pub fn new(union_name: String, match_field: FieldReference)
+    pub fn new(union_name: String, match_target: Reference)
                -> UnionVariantBuilder {
+        let mut data = TypeData::default();
+        let match_target_handle = data.add_reference(match_target.clone());
+
         UnionVariantBuilder {
             typ: Type {
-                data: TypeData::default(),
+                data: data,
                 variant: Variant::Union(UnionVariant {
                     union_name: union_name,
 
-                    match_field_ref: match_field,
-                    match_field: None,
-                    match_type: None,
+                    match_target_ref: match_target,
+                    match_target_handle: match_target_handle,
 
                     cases: Vec::new(),
+
+                    tag_property_type: None,
                 })
             }
         }

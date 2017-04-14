@@ -3,6 +3,7 @@ use std::cell::RefCell;
 use ::ir::TargetType;
 use ::ir::spec::{Type, TypeVariant, TypeData, WeakTypeContainer, TypeContainer, CompilePass};
 use ::ir::spec::variant::{Variant, VariantType};
+use ::ir::type_spec::{TypeSpecContainer, TypeSpecVariant, WeakTypeSpecContainer};
 use ::ir::compilation_unit::{CompilationUnit, TypePath, NamedTypeContainer};
 use ::errors::*;
 
@@ -23,9 +24,7 @@ impl TypeVariant for SimpleScalarVariant {
     fn get_type(&self, data: &TypeData) -> VariantType {
         VariantType::SimpleScalar(data.name.clone())
     }
-    fn get_result_type(&self, _data: &TypeData) -> Option<TargetType> {
-        self.target_type
-    }
+
     default_resolve_child_name_impl!();
     default_has_property_impl!();
 
@@ -40,20 +39,27 @@ impl TypeVariant for SimpleScalarVariant {
 
                 Ok(())
             }
-            CompilePass::PropagateTypes { ref mut has_changed } => {
-                let target_named_type = self.target.clone().unwrap();
-                let target_named_type_inner = target_named_type.borrow();
-                let result_type = target_named_type_inner.typ.get_result_type();
+            CompilePass::MakeTypeSpecs => {
+                let named_target_rc = self.target.clone().unwrap();
+                let named_target = named_target_rc.borrow();
 
-                if result_type != self.target_type {
-                    **has_changed = true;
-                }
-
-                self.target_type = result_type;
-
+                data.type_spec = Some(named_target.type_spec.clone());
                 Ok(())
-
             }
+            //CompilePass::PropagateTypes { ref mut has_changed } => {
+            //    let target_named_type = self.target.clone().unwrap();
+            //    let target_named_type_inner = target_named_type.borrow();
+            //    let result_type = target_named_type_inner.typ.get_result_type();
+
+            //    if result_type != self.target_type {
+            //        **has_changed = true;
+            //    }
+
+            //    self.target_type = result_type;
+
+            //    Ok(())
+
+            //}
             _ => Ok(()),
         }
     }

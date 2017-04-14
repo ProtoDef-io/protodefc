@@ -1,12 +1,9 @@
-use ::ir::{TargetType, FieldPropertyReference};
 use ::ir::spec::{TypeVariant, TypeData, Type, WeakTypeContainer, TypeContainer, CompilePass};
-use ::ir::spec::data::SpecChildHandle;
+use ::ir::spec::reference::Reference;
+use ::ir::spec::data::{SpecChildHandle, SpecReferenceHandle};
 use ::ir::spec::variant::{Variant, VariantType};
-use ::ir::compilation_unit::{CompilationUnit, TypePath};
+use ::ir::type_spec::{TypeSpecVariant, ContainerSpec, ContainerFieldSpec, WeakTypeSpecContainer};
 use ::errors::*;
-
-use std::rc::Rc;
-use std::cell::RefCell;
 
 #[derive(Debug)]
 pub struct ContainerVariant {
@@ -32,49 +29,25 @@ impl TypeVariant for ContainerVariant {
     }
 
     default_has_property_impl!();
-    default_get_result_type_impl!();
 
     fn do_compile_pass(&mut self, data: &mut TypeData, pass: &mut CompilePass)
                        -> Result<()> {
         match *pass {
-            CompilePass::ResolveInternalReferences(ref resolver) => {
-                let mut resolves: Vec<WeakTypeContainer> =
-                    Vec::with_capacity(self.fields.len());
-
-                for field in &self.fields {
-                    match field.field_type {
-                        ContainerFieldType::Virtual { ref property } => {
-                            let prop_node = resolver(self, data,
-                                                     &property.reference)?;
-
-                            let prop_node_u = prop_node.upgrade();
-                            let prop_node_ui = prop_node_u.borrow();
-
-                            let prop_valid = prop_node_ui.variant
-                                .to_variant()
-                                .has_property(&prop_node_ui.data,
-                                              &property.property);
-                            ensure!(prop_valid != None, CompilerError::NoProperty {
-                                property: property.property.clone(),
-                                variant: prop_node_ui.variant.get_type(
-                                    &prop_node_ui.data),
-                            });
-
-                            resolves.push(prop_node);
+            CompilePass::MakeTypeSpecs => {
+                data.type_spec = Some(TypeSpecVariant::Container(ContainerSpec {
+                    name: "".to_owned().into(), // TODO
+                    fields: self.fields.iter().map(|f| {
+                        let child_rc = f.child.clone().upgrade();
+                        let child = child_rc.borrow();
+                        ContainerFieldSpec {
+                            name: f.name.clone().into(),
+                            type_spec: child.data.type_spec.clone().unwrap(),
                         }
-                        _ => (),
-                    }
-                }
-
-                for field in self.fields.iter_mut().rev() {
-                    match field.field_type {
-                        ContainerFieldType::Virtual { ref mut property } => {
-                            property.reference_node = resolves.pop();
-                        }
-                        _ => (),
-                    }
-                }
-
+                    }).collect(),
+                }).into());
+                Ok(())
+            }
+            CompilePass::GenerateFieldAccessOrder => {
                 Ok(())
             }
             _ => Ok(()),
@@ -105,19 +78,9 @@ pub enum ContainerFieldType {
     ///
     /// It needs a to reference a property of another field
     /// so that it knows what to write.
-    Virtual { property: FieldPropertyReference },
-
-    /// A const field will neither be read or written. It
-    /// does not exist in the output data structure.
-    ///
-    /// It will always have a fixed value.
-    ///
-    /// It can have an optional property reference. If it has
-    /// one, it will validate that the property is equal to the
-    /// constant.
-    Const {
-        validate_property: Option<FieldPropertyReference>,
-        value: String,
+    Virtual {
+        reference: Reference,
+        reference_handle: SpecReferenceHandle,
     },
 }
 
@@ -142,16 +105,20 @@ impl ContainerVariantBuilder {
     }
 
     pub fn normal_field(&mut self, name: String, typ: TypeContainer) {
+        self.num_non_virt_fields += 1;
         self.field(name, typ, ContainerFieldType::Normal);
     }
 
-    pub fn field(&mut self, name: String, typ: TypeContainer, container_type: ContainerFieldType) {
-        let child_handle = self.typ.data.add_child(typ.clone());
+    pub fn virtual_field(&mut self, name: String, typ: TypeContainer, value_ref: Reference) {
+        let handle = self.typ.data.add_reference(value_ref.clone());
+        self.field(name, typ, ContainerFieldType::Virtual {
+            reference: value_ref,
+            reference_handle: handle,
+        });
+    }
 
-        match container_type {
-            ContainerFieldType::Normal => self.num_non_virt_fields += 1,
-            _ => (),
-        }
+    fn field(&mut self, name: String, typ: TypeContainer, container_type: ContainerFieldType) {
+        let child_handle = self.typ.data.add_child(typ.clone());
 
         match self.typ.variant {
             Variant::Container(ref mut variant) => {

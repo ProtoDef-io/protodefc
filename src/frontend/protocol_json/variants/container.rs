@@ -5,7 +5,7 @@ use ::json::JsonValue;
 use ::errors::*;
 use super::super::type_from_json;
 use ::ir::compilation_unit::TypePath;
-use ::ir::{FieldPropertyReference, FieldReference};
+use ::ir::spec::reference::Reference;
 
 pub struct ContainerReader;
 impl FromProtocolJson for ContainerReader {
@@ -31,10 +31,8 @@ impl FromProtocolJson for ContainerReader {
             let final_type = type_from_json(&member["type"])?;
 
             if is_virtual {
-                let typ = ContainerFieldType::Virtual {
-                    property: read_prop_reference(&member["value"])?,
-                };
-                builder.field(name.to_string(), final_type, typ);
+                let reference = read_prop_reference(&member["value"])?;
+                builder.virtual_field(name.to_string(), final_type, reference);
             } else {
                 builder.normal_field(name.to_string(), final_type);
             }
@@ -44,21 +42,7 @@ impl FromProtocolJson for ContainerReader {
     }
 }
 
-fn read_prop_reference(json: &JsonValue) -> Result<FieldPropertyReference> {
-    ensure!(json.is_object(), "field property reference must be object");
-    ensure!(json["_kind"] == "property_ref",
-            "field property reference must have \"kind\": \"property_ref\"");
-
-    let reference_str = json["ref"].as_str()
-        .ok_or("\"ref\" must be string in property_ref")?;
-    let property_name = json["prop"].as_str()
-        .ok_or("\"prop\" must be string in property_ref")?;
-
-    let reference = FieldReference::parse(reference_str)
-        .ok_or("invalid field reference in property_ref")?;
-    Ok(FieldPropertyReference {
-        property: property_name.to_owned(),
-        reference: reference,
-        reference_node: None,
-    })
+fn read_prop_reference(json: &JsonValue) -> Result<Reference> {
+    ensure!(json.is_string(), "field property reference must be string");
+    Reference::parse(json.as_str().unwrap())
 }

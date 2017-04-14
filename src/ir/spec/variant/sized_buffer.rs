@@ -1,12 +1,14 @@
 use ::errors::*;
-use ::ir::{TargetType, FieldReference};
+use ::ir::TargetType;
 use ::ir::spec::{TypeVariant, TypeData, WeakTypeContainer, CompilePass};
+use ::ir::spec::reference::Reference;
+use ::ir::type_spec::{TypeSpecContainer, TypeSpecVariant, WeakTypeSpecContainer};
 use super::VariantType;
 use ::ir::compilation_unit::{CompilationUnit, TypePath};
 
 #[derive(Debug)]
 pub struct SizedBufferVariant {
-    count_ref: FieldReference,
+    count_ref: Reference,
 }
 impl TypeVariant for SizedBufferVariant {
 
@@ -16,10 +18,14 @@ impl TypeVariant for SizedBufferVariant {
 
     default_resolve_child_name_impl!();
     default_has_property_impl!();
-    default_get_result_type_impl!();
 
     fn do_compile_pass(&mut self, data: &mut TypeData, pass: &mut CompilePass)
                        -> Result<()> {
-        Ok(())
+        match *pass {
+            CompilePass::MakeTypeSpecs => {
+                unimplemented!();
+            }
+            _ => Ok(()),
+        }
     }
 }

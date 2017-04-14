@@ -4,6 +4,7 @@ use ::ir::spec::variant::*;
 use super::*;
 use super::utils::*;
 use super::container_utils::*;
+use super::reference::build_reference_accessor;
 
 pub fn generate_deserialize(typ: TypeContainer) -> Result<Block> {
     let typ_inner = typ.borrow();
@@ -50,7 +51,7 @@ impl BaseDeserialize for ContainerVariant {
             let real_field = self.fields.iter()
                 .find(|f| field_is_normal(f))
                 .unwrap();
-            let real_field_out = output_for_type(real_field.child.upgrade());
+            let real_field_out = output_for_type(&real_field.child.upgrade());
 
             ops.push(Operation::Assign {
                 name: output_for(data).into(),
@@ -63,7 +64,7 @@ impl BaseDeserialize for ContainerVariant {
                     .filter(|f| field_is_normal(f))
                     .map(|field| (
                         field.name.clone(),
-                        output_for_type(field.child.upgrade()).into()
+                        output_for_type(&field.child.upgrade()).into()
                     ))
                     .collect(),
             });
@@ -77,11 +78,13 @@ impl BaseDeserialize for ArrayVariant {
     fn deserialize(&self, data: &TypeData) -> Result<Block> {
         let mut ops: Vec<Operation> = Vec::new();
 
-        let count_rc = self.count.clone().unwrap().upgrade();
-        let count_var = output_for_type(count_rc);
+        let count_var = var_for("count", data);
+        let count_root_node = data.get_reference_root(self.count_handle).upgrade();
+        ops.push(Operation::Block(build_reference_accessor(
+            self, data, self.count_handle, count_var.clone().into(), true)));
 
         let child_rc = self.child.upgrade();
-        let child_var = output_for_type(child_rc.clone());
+        let child_var = output_for_type(&child_rc);
 
         let ident = data.ident.unwrap();
         let item_var = format!("array_{}_index", ident);
@@ -102,8 +105,10 @@ impl BaseDeserialize for UnionVariant {
     fn deserialize(&self, data: &TypeData) -> Result<Block> {
         let mut ops: Vec<Operation> = Vec::new();
 
-        let tag_rc = self.match_field.clone().unwrap().upgrade();
-        let tag_var = output_for_type(tag_rc);
+        let tag_root_node = data.get_reference_root(self.match_target_handle).upgrade();
+        let tag_var = var_for_type("tag", &tag_root_node);
+        ops.push(Operation::Block(build_reference_accessor(
+            self, data, self.match_target_handle, tag_var.clone().into(), true)));
 
         let out_var = output_for(data);
 
@@ -118,7 +123,7 @@ impl BaseDeserialize for UnionVariant {
                         union_name: self.union_name.clone(),
                         union_tag: case.case_name.clone(),
                         output: out_var.clone().into(),
-                        input: output_for_type(child_rc).into(),
+                        input: output_for_type(&child_rc).into(),
                     });
 
                     LiteralCase {

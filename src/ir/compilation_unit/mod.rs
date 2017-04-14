@@ -5,6 +5,7 @@ use ::std::fmt;
 
 use ::rc_container::{Container, WeakContainer};
 use ::ir::TargetType;
+use ::ir::type_spec::TypeSpecContainer;
 
 pub type NamedTypeContainer = Container<NamedType>;
 pub type WeakNamedTypeContainer = WeakContainer<NamedType>;
@@ -24,12 +25,13 @@ pub struct CompilationUnitNS {
 pub struct NamedType {
     pub path: TypePath,
     pub typ: TypeKind,
+    pub type_spec: TypeSpecContainer,
     pub type_id: u64,
 }
 
 #[derive(Debug, Clone)]
 pub enum TypeKind {
-    Native(TargetType),
+    Native(TypeSpecContainer),
     Type(TypeContainer),
 }
 
@@ -78,25 +80,8 @@ impl CompilationUnit {
         }
     }
 
-    pub fn compile_types(&self) -> Result<()> {
-
-        // Resolves references between defined types in a context
-        ::pass::resolve_context::run(self)?;
-
-        // Propagates types between defined types in a context
-        // Depends on: resolve_context
-        ::pass::propagate_types::run(self)?;
-
-        // Resolves all references to other nodes within a type
-        ::pass::resolve_reference::run(self)?;
-
-        // Gives all nodes a weak reference to their parent
-        ::pass::assign_parent::run(self)?;
-
-        // Assigns all nodes within a type with a locally unique identifier
-        ::pass::assign_ident::run(self)?;
-
-        Ok(())
+    pub fn compile_types(&mut self) -> Result<()> {
+        ::pass::run_passes(self)
     }
 
     pub fn get_type_id(&self, path: &TypePath) -> Result<u64> {
@@ -247,12 +232,12 @@ impl NSPath {
 
 impl TypeKind {
 
-    pub fn get_result_type(&self) -> Option<TargetType> {
+    pub fn get_result_type(&self) -> Option<TypeSpecContainer> {
         match *self {
             TypeKind::Native(ref typ) => Some(typ.clone()),
             TypeKind::Type(ref container) => {
                 let inner = container.borrow();
-                inner.variant.to_variant().get_result_type(&inner.data)
+                Some(inner.data.get_result_type())
             }
         }
     }

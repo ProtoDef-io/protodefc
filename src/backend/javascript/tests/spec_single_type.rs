@@ -83,8 +83,8 @@ fn array() {
 def_native("u8");
 
 def("test") => container(virtual: "true") {
-    virtual_field("len", ref: "arr", prop: "length") => u8;
-    field("arr") => array(ref: "../len") => u8;
+    virtual_field("len", value: "arr/@length") => u8;
+    field("arr") => array(length: "../len") => u8;
 };
 "#,
         "[1, 2, 3]",
@@ -99,7 +99,7 @@ fn union() {
 def_native("u8");
 
 def("test") => container(virtual: "true") {
-    virtual_field("tag", ref: "data", prop: "tag") => u8;
+    virtual_field("tag", value: "data/@tag") => u8;
     field("data") => union("test_union", ref: "../tag") {
         variant("zero", match: "0") => u8;
         variant("one", match: "1") => container {

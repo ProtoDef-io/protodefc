@@ -7,6 +7,7 @@ use ::ir::compilation_unit::{CompilationUnit, CompilationUnitNS, NSPath, NamedTy
                                   TypePath};
 use ::ir::IdGenerator;
 use ::errors::*;
+use ::ir::type_spec::{TypeSpecVariant, IntegerSpec, IntegerSize, Signedness};
 
 use ::ir::TargetType;
 pub use self::ast::parser::parse;
@@ -50,13 +51,14 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
                 let typ = to_ir::type_def_to_ir(stmt)?;
 
                 ns.add_type(NamedType {
-                        path: TypePath {
-                            path: ns_path.clone(),
-                            name: name.to_owned(),
-                        },
-                        typ: TypeKind::Type(typ),
-                        type_id: gen.get(),
-                    })?;
+                    path: TypePath {
+                        path: ns_path.clone(),
+                        name: name.to_owned(),
+                    },
+                    typ: TypeKind::Type(typ),
+                    type_id: gen.get(),
+                    type_spec: TypeSpecVariant::Referenced(None).into(),
+                })?;
             }
             "def_native" => {
                 head_item.validate(1, &[], &[])?;
@@ -74,20 +76,26 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
                     .ok_or("def_native must have @type annotation")?
                     .string()
                     .ok_or("def_native @type annotation must be string")?;
+
+                // TODO
                 let target_type = match target_type_str {
-                    "none" => TargetType::Unknown,
-                    "integer" => TargetType::Integer,
+                    "none" => TypeSpecVariant::Opaque.into(),
+                    "integer" => TypeSpecVariant::Integer(IntegerSpec {
+                        size: IntegerSize::B64,
+                        signed: Signedness::Signed,
+                    }).into(),
                     name => bail!("unknown type '{}'", name),
                 };
 
                 ns.add_type(NamedType {
-                        path: TypePath {
-                            path: ns_path.clone(),
-                            name: name.to_owned(),
-                        },
-                        typ: TypeKind::Native(target_type),
-                        type_id: gen.get(),
-                    })?;
+                    path: TypePath {
+                        path: ns_path.clone(),
+                        name: name.to_owned(),
+                    },
+                    typ: TypeKind::Native(target_type),
+                    type_id: gen.get(),
+                    type_spec: TypeSpecVariant::Referenced(None).into(),
+                })?;
             }
             "namespace" => {
                 head_item.validate(1, &[], &[])?;

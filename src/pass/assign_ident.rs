@@ -17,13 +17,13 @@ pub fn run(cu: &CompilationUnit) -> Result<()> {
 
 fn do_run(typ: &TypeContainer, current_id: &mut u64) -> Result<()> {
     let mut inner = typ.borrow_mut();
-    inner.data.ident = Some(*current_id);
-
-    *current_id += 1;
 
     for mut child in &mut inner.data.get_children().iter() {
         do_run(&mut child, current_id)?;
     }
+
+    *current_id += 1;
+    inner.data.ident = Some(*current_id);
 
     Ok(())
 }

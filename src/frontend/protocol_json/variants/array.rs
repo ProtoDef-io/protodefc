@@ -1,4 +1,3 @@
-use ::ir::FieldReference;
 use ::ir::spec::TypeContainer;
 use ::ir::spec::variant::{ArrayVariant, ContainerVariantBuilder};
 use ::ir::compilation_unit::TypePath;

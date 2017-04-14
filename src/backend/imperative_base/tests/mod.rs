@@ -43,8 +43,8 @@ def("test") => container(virtual: "true") {
 def_native("u8");
 
 def("test") => container {
-    virtual_field("len", ref: "arr", prop: "length") => u8;
-    field("arr") => array(ref: "../len") => u8;
+    virtual_field("len", value: "arr/@length") => u8;
+    field("arr") => array(length: "../len") => u8;
 };
 "#);
 }

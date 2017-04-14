@@ -10,7 +10,7 @@ pub fn generate_deserialize(fun_name: String, typ: TypeContainer) -> Result<Bloc
 
     ib.scope(super::ib_to_js::build_block(&base)?);
     ib.return_(format!("[{}, offset]",
-                       ib::utils::output_for_type(typ.clone())).into());
+                       ib::utils::output_for_type(&typ.clone())).into());
 
     let mut b = Block::new();
     b.decl_fun(

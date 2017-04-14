@@ -4,27 +4,22 @@ use ::nom::IResult;
 use ::errors::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ReferencePath {
-    pub up: usize,
-    pub down: Vec<Name>,
+pub enum ReferenceItem {
+    Down(Name),
+    Property(Name),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Reference {
-    Value{
-        path: ReferencePath
-    },
-    Property {
-        path: ReferencePath,
-        prop: Name
-    },
+pub struct Reference {
+    up: usize,
+    pub items: Vec<ReferenceItem>,
 }
 
 impl Reference {
 
     pub fn parse(input: &str) -> Result<Self> {
         match reference(input) {
-            IResult::Done(_, out) => Ok(out),
+            IResult::Done(_, out) => out,
             IResult::Error(err) =>
                 bail!(CompilerError::NomParseError(nom_error_to_pos(&err, input.len()))),
             IResult::Incomplete(_) => unreachable!(),
@@ -32,71 +27,117 @@ impl Reference {
     }
 
     pub fn to_string(&self) -> String {
-        match *self {
-            Reference::Value { ref path } => path.to_string(),
-            Reference::Property { ref path, ref prop } => {
-                let mut string = path.to_string();
+        let mut ret = String::new();
 
-                string.push_str("@");
-                string.push_str(&prop.0);
-
-                string
-            }
-        }
-    }
-
-}
-
-impl ReferencePath {
-    pub fn to_string(&self) -> String {
-        let mut string = String::new();
-
-        for _ in 0..(self.up) {
-            string.push_str("../");
-        }
-
-        for down in self.down.iter().map(|s| s.0.as_ref()).intersperse("/") {
-            string.push_str(down);
-        }
-
-        string
-    }
-}
-
-named!(reference<&str, Reference>, complete!(do_parse!(
-    up: fold_many0!(complete!(tag_s!("../")), 0, |num, _| num + 1) >>
-        down: separated_list!(tag_s!("/"), name) >>
-        has_prop: opt!(complete!(tag_s!("@"))) >>
-        prop: cond!(has_prop.is_some(), name) >>
-        eof!() >>
-        (
-            if has_prop.is_some() {
-                Reference::Property {
-                    path: ReferencePath { up: up, down: down },
-                    prop: prop.unwrap(),
-                }
+        for is_up in (0..(self.up)).map(|_| true).intersperse(false) {
+            if is_up {
+                ret.push_str("..");
             } else {
-                Reference::Value {
-                    path: ReferencePath { up: up, down: down },
+                ret.push_str("/");
+            }
+        }
+
+        if self.up != 0 && self.items.len() != 0 {
+            ret.push_str("/");
+        }
+
+        for item in self.items.iter().map(|i| Some(i)).intersperse(None) {
+            match item {
+                None => ret.push_str("/"),
+                Some(&ReferenceItem::Down(ref name)) => ret.push_str(&name.0),
+                Some(&ReferenceItem::Property(ref name)) => {
+                    ret.push_str("@");
+                    ret.push_str(&name.0);
                 }
             }
-        )
-)));
+        }
+        ret
+    }
+
+    pub fn up(&self) -> usize {
+        self.up
+    }
+
+    pub fn num_operations(&self) -> usize {
+        self.items.len()
+    }
+
+}
+
+
+enum ParsedReferenceItem {
+    Up,
+    Down(Name),
+    Property(Name),
+}
+
+named!(reference<&str, Result<Reference>>, do_parse!(
+    items: separated_list!(tag_s!("/"), reference_item) >>
+        eof!() >>
+        (make_reference(items))
+));
+
+named!(reference_item<&str, ParsedReferenceItem>, alt_complete!(
+    tag_s!("..") => { |_| ParsedReferenceItem::Up }
+    | do_parse!( tag_s!("@") >> name: name >> (name) ) => { |n| ParsedReferenceItem::Property(n) }
+    | name => { |n| ParsedReferenceItem::Down(n) }
+));
+
+fn make_reference(mut items: Vec<ParsedReferenceItem>) -> Result<Reference> {
+    let mut up: usize = 0;
+    let mut allow_up = true;
+    let mut out = Vec::new();
+
+    for item in items.drain(..) {
+        match item {
+            ParsedReferenceItem::Up => {
+                if allow_up {
+                    up += 1;
+                } else {
+                    bail!("upward references are only allowed at beginning of reference");
+                }
+            }
+            ParsedReferenceItem::Down(name) => {
+                allow_up = false;
+                out.push(ReferenceItem::Down(name));
+            }
+            ParsedReferenceItem::Property(name) => {
+                allow_up = false;
+                out.push(ReferenceItem::Property(name));
+            }
+        }
+    }
+
+    Ok(Reference {
+        up: up,
+        items: out,
+    })
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     fn test_parse(input: &str) {
-        assert!(Reference::parse(input).unwrap().to_string() == input);
+        let output = Reference::parse(input).unwrap().to_string();
+        println!("{:?} == {:?}", input, output);
+        assert!(input == output);
     }
 
     #[test]
-    fn field_references() {
+    fn successes() {
         test_parse("thing");
         test_parse("../../thing");
         test_parse("@length");
         test_parse("../@length");
-        test_parse("../thing@length");
+        test_parse("../thing/@length");
+        test_parse("../thing/@length/thing");
+        test_parse("../../..");
+    }
+
+    #[test]
+    #[should_panic]
+    fn up_after_down() {
+        test_parse("thing/../thing");
     }
 }

@@ -1,9 +1,9 @@
-use ::ir::FieldPropertyReference;
 use ::ir::spec::TypeContainer;
 use ::errors::*;
 use ::ir::TargetType;
 use ::ir::compilation_unit::TypePath;
 use ::ir::spec::variant::*;
+use ::ir::spec::reference::Reference;
 
 use super::ast::{Ident, Statement, Value};
 
@@ -72,7 +72,7 @@ impl ValuesToIr for ContainerVariant {
                     builder.normal_field(field_name.into(), field_type);
                 }
                 Some("virtual_field") => {
-                    block_item.validate(1, &["ref", "prop"], &["ref", "prop"])?;
+                    block_item.validate(1, &["value"], &["value"])?;
 
                     let field_name = block_item.get_num(0)
                         .unwrap()
@@ -83,25 +83,15 @@ impl ValuesToIr for ContainerVariant {
                         .chain_err(|| format!("inside '{}' virtual_field",
                                               field_name))?;
 
-                    let property = {
-                        let reference = block_item.get_tagged("ref")
-                            .unwrap()
-                            .field_reference()
-                            .ok_or("'ref' field is not a valid reference")?;
-                        let name = block_item.get_tagged("prop")
-                            .unwrap()
-                            .string()
-                            .ok_or("'prop' field is not a string")?;
-                        FieldPropertyReference {
-                            reference: reference,
-                            reference_node: None,
-                            property: name.into(),
-                        }
+                    let reference = {
+                        let ref_str = block_item
+                            .get_tagged("value").unwrap()
+                            .string().ok_or("'value' is not a string")?;
+                        Reference::parse(ref_str)?
                     };
 
-                    builder.field(field_name.into(),
-                                  field_type,
-                                  ContainerFieldType::Virtual { property: property });
+                    builder.virtual_field(
+                        field_name.into(), field_type, reference);
                 }
                 Some("const_field") => {
                     block_item.validate(1, &["ref", "prop"], &[])?;
@@ -122,12 +112,12 @@ impl ValuesToIr for ContainerVariant {
 impl ValuesToIr for ArrayVariant {
     fn values_to_ir(items: &[Value]) -> Result<TypeContainer> {
         let array_item = items[0].item().unwrap();
-        array_item.validate(0, &["ref"], &["ref"])?;
+        array_item.validate(0, &["length"], &["length"])?;
 
-        let reference = array_item.tagged_arg("ref")
-            .unwrap()
-            .field_reference()
-            .ok_or("array does not contain a valid reference")?;
+        let reference = array_item
+            .tagged_arg("length").unwrap()
+            .string().ok_or("length in array must be reference".into())
+            .and_then(|string| Reference::parse(string))?;
 
         let field_type = type_values_to_ir(&items[1..]).chain_err(|| "inside array".to_owned())?;
 
@@ -152,14 +142,12 @@ impl ValuesToIr for UnionVariant {
         let union_item = items[0].item().unwrap();
         union_item.validate(1, &["ref"], &["ref"])?;
 
-        let union_name = union_item.arg(0)
-            .unwrap()
-            .string()
-            .ok_or("union name must be a string")?;
-        let tag_ref = union_item.tagged_arg("ref")
-            .unwrap()
-            .field_reference()
-            .ok_or("invalid field reference")?;
+        let union_name = union_item
+            .arg(0).unwrap()
+            .string().ok_or("union name must be a string")?;
+        let tag_ref = union_item
+            .tagged_arg("ref").unwrap()
+            .reference()?;
 
         let mut builder = UnionVariantBuilder::new(union_name.into(), tag_ref);
 

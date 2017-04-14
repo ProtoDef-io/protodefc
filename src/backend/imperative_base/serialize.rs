@@ -1,6 +1,7 @@
 use ::errors::*;
 use ::ir::spec::{TypeVariant, TypeData, TypeContainer};
-use ::ir::spec::variant::{SimpleScalarVariant, ContainerVariant, ArrayVariant, UnionVariant};
+use ::ir::spec::variant::{SimpleScalarVariant, ContainerVariant, ArrayVariant,
+                          UnionVariant, ContainerFieldType};
 use super::*;
 use super::utils::*;
 use super::container_utils::*;
@@ -33,10 +34,20 @@ impl BaseSerialize for ContainerVariant {
     fn serialize(&self, data: &TypeData) -> Result<Block> {
         let mut ops: Vec<Operation> = Vec::new();
 
+        // TODO: Do this only allows for one level of virtual field references
+        for (idx, field) in self.fields.iter().enumerate() {
+            if let ContainerFieldType::Normal = field.field_type {
+                build_field_accessor(self, data, &mut ops, idx, false)?;
+            }
+        }
+        for (idx, field) in self.fields.iter().enumerate() {
+            if let ContainerFieldType::Virtual { .. } = field.field_type {
+                build_field_accessor(self, data, &mut ops, idx, false)?;
+            }
+        }
+
         for (idx, field) in self.fields.iter().enumerate() {
             let child_typ = field.child.upgrade();
-
-            build_var_accessor(self, data, &mut ops, idx)?;
             ops.push(Operation::Block(generate_serialize(child_typ)?));
         }
 
@@ -51,7 +62,7 @@ impl BaseSerialize for ArrayVariant {
         let ident = data.ident.unwrap();
         let index_var = format!("array_{}_index", ident);
 
-        let child_input_var = input_for_type(self.child.upgrade());
+        let child_input_var = input_for_type(&self.child.upgrade());
 
         ops.push(Operation::ForEachArray {
             array: input_for(data).into(),

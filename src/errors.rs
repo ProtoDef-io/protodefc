@@ -1,5 +1,5 @@
 use ::ir::spec::variant::VariantType;
-use ::ir::FieldReference;
+use ::ir::spec::reference::Reference;
 
 
 error_chain! {
@@ -34,7 +34,7 @@ pub enum CompilerError {
     UnmatchableType { variant: VariantType, },
 
     /// Error while resolving a reference.
-    ReferenceError { reference: FieldReference, },
+    ReferenceError { reference: Reference, },
 
     /// Error occurred while inside a variant.
     InsideVariant { variant: VariantType, },

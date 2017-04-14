@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
-use ::ir::FieldReference;
+use ::errors::*;
 use ::ir::compilation_unit::{NSPath, TypePath};
+use ::ir::spec::reference::Reference;
 
 pub mod parser;
 pub mod printer;
@@ -76,8 +77,9 @@ impl Value {
         }
     }
 
-    pub fn field_reference(&self) -> Option<FieldReference> {
-        self.string().and_then(|string| FieldReference::parse(string))
+    pub fn reference(&self) -> Result<Reference> {
+        self.string().ok_or("reference must be string".into())
+            .and_then(|s| Reference::parse(s))
     }
 
     pub fn new_string(string: String) -> Value {

@@ -1,5 +1,6 @@
 use super::{TypeVariant, TypeData};
 use ::ir::compilation_unit::TypePath;
+use ::ir::type_spec::WeakTypeSpecContainer;
 
 macro_rules! default_resolve_child_name_impl {
     () => {
@@ -12,40 +13,9 @@ macro_rules! default_resolve_child_name_impl {
 }
 macro_rules! default_has_property_impl {
     () => {
-        fn has_property(&self, _data: &TypeData, _prop_name: &str)
-                        -> Option<TargetType> {
-            None
-        }
-    }
-}
-macro_rules! default_get_result_type_impl {
-    () => {
-        fn get_result_type(&self, _data: &TypeData) -> Option<TargetType> {
-            Some(TargetType::Unknown)
-        }
-    }
-}
-macro_rules! default_resolve_references {
-    () => {
-        fn do_resolve_references(&mut self, _data: &mut TypeData,
-                                 _resolver: &::ReferenceResolver) -> Result<()> {
-            Ok(())
-        }
-    }
-}
-macro_rules! default_resolve_on_context {
-    () => {
-        fn resolve_on_context(&mut self, _data: &TypeData, _current_path: &TypePath,
-                              _context: &CompilationUnit) -> Result<()> {
-            Ok(())
-        }
-    }
-}
-macro_rules! default_do_compile_pass {
-    () => {
-        fn do_compile_pass(&mut self, _data: &TypeData, _pass: &mut CompilePass)
-                           -> Result<()> {
-            Ok(())
+        fn has_spec_property(&self, _data: &TypeData, prop_name: &str)
+                             -> Result<Option<WeakTypeSpecContainer>> {
+            bail!("variant has no property '{}'", prop_name);
         }
     }
 }
@@ -68,9 +38,6 @@ pub use self::terminated_buffer::TerminatedBufferVariant;
 mod simple_scalar;
 pub use self::simple_scalar::SimpleScalarVariant;
 
-mod error;
-pub use self::error::ErrorVariant;
-
 #[derive(Debug)]
 pub enum Variant {
     // Composite
@@ -84,7 +51,6 @@ pub enum Variant {
 
     // Simple
     SimpleScalar(SimpleScalarVariant),
-    Error(ErrorVariant),
 }
 
 impl Variant {
@@ -96,7 +62,6 @@ impl Variant {
             Variant::SizedBuffer(ref inner) => inner,
             Variant::TerminatedBuffer(ref inner) => inner,
             Variant::SimpleScalar(ref inner) => inner,
-            Variant::Error(ref inner) => inner,
         }
     }
 
@@ -108,7 +73,6 @@ impl Variant {
             Variant::SizedBuffer(ref mut inner) => inner,
             Variant::TerminatedBuffer(ref mut inner) => inner,
             Variant::SimpleScalar(ref mut inner) => inner,
-            Variant::Error(ref mut inner) => inner,
         }
     }
 
@@ -121,7 +85,6 @@ impl Variant {
             Variant::TerminatedBuffer(_) => VariantType::TerminatedBuffer,
             Variant::SimpleScalar(_) =>
                 VariantType::SimpleScalar(data.name.clone()),
-            Variant::Error(_) => VariantType::Error,
         }
     }
 
@@ -135,5 +98,4 @@ pub enum VariantType {
     SizedBuffer,
     TerminatedBuffer,
     SimpleScalar(TypePath),
-    Error,
 }
