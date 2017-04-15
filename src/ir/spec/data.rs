@@ -37,6 +37,7 @@ pub struct ReferenceData {
     pub access_time: ReferenceAccessTime,
     pub reference: Reference,
     pub path: Option<Vec<ReferencePathEntryData>>,
+    pub target_type_spec: Option<TypeSpecContainer>,
 }
 #[derive(Debug, Clone)]
 pub struct ReferencePathEntryData {
@@ -78,6 +79,7 @@ impl TypeData {
             reference: reference,
             path: None,
             access_time: access_time,
+            target_type_spec: None,
         });
         SpecReferenceHandle(index)
     }
@@ -87,6 +89,10 @@ impl TypeData {
     }
     pub fn get_reference_root(&self, handle: SpecReferenceHandle) -> WeakTypeContainer {
         self.references[handle.0].path.as_ref().unwrap()[0].node.clone().unwrap()
+    }
+    pub fn get_reference_data<'a>(&'a self, handle: SpecReferenceHandle)
+                                  -> &'a ReferenceData {
+        &self.references[handle.0]
     }
 
 }
@@ -105,4 +111,12 @@ impl Default for TypeData {
             type_spec: TypeSpecContainer::new_not_assigned(),
         }
     }
+}
+
+impl ReferenceData {
+
+    pub fn get_path<'a>(&'a self) -> &'a [ReferencePathEntryData] {
+        self.path.as_ref().unwrap()
+    }
+
 }

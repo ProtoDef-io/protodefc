@@ -5,20 +5,54 @@ use ::ir::spec::data::{ReferencePathEntryData, ReferenceData,
 use ::ir::spec::reference::ReferenceItem;
 use ::errors::*;
 
+struct ResolveReferenceState {
+    unfinished: bool,
+    changed: bool,
+}
+impl ResolveReferenceState {
+    pub fn mark_unfinished(&mut self) {
+        self.unfinished = true;
+    }
+    pub fn mark_changed(&mut self) {
+        self.changed = true;
+    }
+}
+impl Default for ResolveReferenceState {
+    fn default() -> ResolveReferenceState {
+        ResolveReferenceState {
+            unfinished: false,
+            changed: false,
+        }
+    }
+}
+
 pub fn run(cu: &CompilationUnit) -> Result<()> {
+
     cu.each_type(&mut |typ| {
         let mut parents: Vec<WeakTypeContainer> = Vec::new();
         let named_typ_inner = typ.borrow();
         if let TypeKind::Type(ref root_node) = named_typ_inner.typ {
-            do_run(root_node, &mut parents)?
+            let mut pass_data = ResolveReferenceState::default();
+            pass_data.mark_changed();
+            pass_data.mark_unfinished();
+
+            while pass_data.changed && pass_data.unfinished {
+                pass_data = ResolveReferenceState::default();
+                do_run(root_node, &mut parents, &mut pass_data)?
+            }
+
+            if pass_data.unfinished {
+                bail!("could not resolve all references");
+            }
         };
         Ok(())
-    })
+    })?;
 
+    Ok(())
 }
 
-fn do_run(typ: &TypeContainer, parents: &mut Vec<WeakTypeContainer>)
-          -> Result<()> {
+fn do_run(typ: &TypeContainer, parents: &mut Vec<WeakTypeContainer>,
+          pass: &mut ResolveReferenceState) -> Result<()> {
     let chain;
     let children: Vec<TypeContainer>;
     let mut references: Vec<ReferenceData>;
@@ -40,7 +74,7 @@ fn do_run(typ: &TypeContainer, parents: &mut Vec<WeakTypeContainer>)
         }
 
         let root = parents[(parents.len() - 1) - up].clone();
-        resolve(root.upgrade(), reference_data)?;
+        resolve(root.upgrade(), reference_data, pass)?;
     }
 
     {
@@ -48,7 +82,7 @@ fn do_run(typ: &TypeContainer, parents: &mut Vec<WeakTypeContainer>)
     }
 
     for child in &children {
-        do_run(&child, parents)
+        do_run(&child, parents, pass)
             .chain_err(|| chain.clone())?;
     }
     parents.pop();
@@ -56,11 +90,16 @@ fn do_run(typ: &TypeContainer, parents: &mut Vec<WeakTypeContainer>)
     Ok(())
 }
 
-fn resolve(root: TypeContainer, target: &mut ReferenceData) -> Result<()> {
+fn resolve(root: TypeContainer, target: &mut ReferenceData,
+           pass: &mut ResolveReferenceState) -> Result<()> {
     let mut path_entries: Vec<ReferencePathEntryData> = Vec::new();
 
     let mut current_type = root.borrow().data.get_result_type();
     let mut current_node = Some(root);
+
+    if target.path.is_some() {
+        return Ok(());
+    }
 
     for item in &target.reference.items {
         match *item {
@@ -97,7 +136,12 @@ fn resolve(root: TypeContainer, target: &mut ReferenceData) -> Result<()> {
                     let prop_type = node_inner.variant.to_variant()
                         .has_spec_property(&node_inner.data, &name.0)?;
 
-                    current_type = prop_type.unwrap().upgrade()
+                    if let Some(ref inner) = prop_type {
+                        current_type = inner.upgrade();
+                    } else {
+                        pass.mark_unfinished();
+                        return Ok(());
+                    }
                 } else {
                     unimplemented!()
                 }
@@ -107,5 +151,7 @@ fn resolve(root: TypeContainer, target: &mut ReferenceData) -> Result<()> {
     }
 
     target.path = Some(path_entries);
+    target.target_type_spec = Some(current_type);
+    pass.mark_changed();
     Ok(())
 }

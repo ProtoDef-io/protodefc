@@ -31,11 +31,12 @@ pub struct UnionCase {
 impl TypeVariant for UnionVariant {
     default_resolve_child_name_impl!();
 
-    fn has_spec_property(&self, _data: &TypeData, name: &str)
+    fn has_spec_property(&self, data: &TypeData, name: &str)
                          -> Result<Option<WeakTypeSpecContainer>> {
         // TODO: Infer type
         match name {
-            "tag" => Ok(self.tag_property_type.clone()),
+            //"tag" => Ok(self.tag_property_type.clone()),
+            "tag" => Ok(data.get_reference_data(self.match_target_handle).target_type_spec.clone().map(|i| i.downgrade())),
             _ => bail!("union variant has no property '{}'", name),
         }
     }

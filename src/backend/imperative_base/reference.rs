@@ -1,7 +1,10 @@
 use ::ir::spec::{TypeData, TypeVariant};
+use ::ir::spec::variant::Variant;
 use ::ir::spec::reference::ReferenceItem;
-use ::ir::spec::data::SpecReferenceHandle;
-use super::{Var, Block, Operation, Expr, MapOperation};
+use ::ir::spec::data::{SpecReferenceHandle, ReferencePathEntryData,
+                       ReferencePathEntryOperation};
+use ::ir::type_spec::{TypeSpecVariant, EnumSpec};
+use super::{Var, Block, Operation, Expr, MapOperation, Literal, UnionTagCase};
 use super::utils::*;
 
 pub fn build_reference_accessor(variant: &TypeVariant, data: &TypeData,
@@ -38,7 +41,7 @@ pub fn build_reference_accessor(variant: &TypeVariant, data: &TypeData,
 fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                                   reference_handle: SpecReferenceHandle,
                                   output_var: Var, _is_read: bool) -> Block {
-    let reference = data.get_reference(reference_handle);
+    let reference = data.get_reference_data(reference_handle);
     println!("Reference: {:?}", reference);
 
     let ref_root_rc = data.get_reference_root(reference_handle).upgrade();
@@ -49,16 +52,16 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
     let mut res_num = 0;
     let mut prev_res = output_for(&ref_root.data);
 
-    for elem in reference.items.iter().enumerate() {
+    for elem in reference.get_path().iter().enumerate() {
         match elem {
-            (0, &ReferenceItem::Down(ref name)) => {
+            (0, &ReferencePathEntryData { operation: ReferencePathEntryOperation::Down(ref name), .. }) => {
                 // FIXME: This should be done somewhere else in compilation
                 let child = ref_root.variant.to_variant()
-                    .resolve_child_name(&ref_root.data, &name.0)
+                    .resolve_child_name(&ref_root.data, name)
                     .unwrap().upgrade();
                 prev_res = output_for_type(&child);
             }
-            (_, &ReferenceItem::Down(ref name)) => {
+            (_, &ReferencePathEntryData { operation: ReferencePathEntryOperation::Down(ref name), .. }) => {
                 let next_res = var_for(&format!("int_val_{}", res_num), data);
                 res_num += 1;
 
@@ -66,19 +69,21 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                     name: next_res.clone().into(),
                     value: Expr::ContainerField {
                         value: Box::new(Expr::Var(prev_res.into())),
-                        field: name.0.clone(),
+                        field: name.clone(),
                     },
                 });
 
                 prev_res = next_res;
             },
-            (_, &ReferenceItem::Property(ref name)) => {
+            (_, &ReferencePathEntryData { operation: ReferencePathEntryOperation::NodeProperty(ref name), ref node, ref type_spec, .. }) => {
                 let next_res = var_for(&format!("int_val_{}", res_num), data);
                 res_num += 1;
 
+                println!("property {}", name);
+
                 // TODO
 
-                match name.0.as_ref() {
+                match name.as_ref() {
                     "length" => {
                         ops.push(Operation::MapValue {
                             input: prev_res.into(),
@@ -87,45 +92,43 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                         });
                     }
                     "tag" => {
+                        let node_rc = node.clone().unwrap().upgrade();
+                        let node_inner = node_rc.borrow();
 
-                        //match ref_node.variant {
-                        //    Variant::Union(ref union) => {
-                        //        let cases = union.cases.iter().map(|case| {
-                        //            let block = Block(vec![
-                        //                Operation::Assign {
-                        //                    name: chain_var.to_owned().into(),
-                        //                    value: Expr::Literal(Literal::Number(
-                        //                        case.match_val_str.clone()))
-                        //                }
-                        //            ]);
+                        match node_inner.variant {
+                            Variant::Union(ref union) => {
+                                let cases = union.cases.iter().map(|case| {
+                                    let block = Block(vec![
+                                        Operation::Assign {
+                                            name: next_res.to_owned().into(),
+                                            value: Expr::Literal(Literal::Number(
+                                                case.match_val_str.clone()))
+                                        }
+                                    ]);
 
-                        //            UnionTagCase {
-                        //                variant_name: case.case_name.clone(),
-                        //                variant_var: None,
-                        //                block: block,
-                        //            }
-                        //        }).collect();
-                        //        MapOperation::UnionTagToExpr(cases)
-                        //    },
-                        //    // TODO: This NEEDS to be validated earlier.
-                        //    // The way it's done right now is a hack.
-                        //    _ => unreachable!(),
-                        //}
-
-
-
-                        //ops.push(Operation::MapValue {
-                        //    input: prev_res.into(),
-                        //    output: next_res.clone().into(),
-                        //    operation: MapOperation::
-                        //})
-                        unimplemented!()
+                                    UnionTagCase {
+                                        variant_name: case.case_name.clone(),
+                                        variant_var: None,
+                                        block: block,
+                                    }
+                                }).collect();
+                                ops.push(Operation::MapValue {
+                                    input: prev_res.into(),
+                                    output: next_res.clone().into(),
+                                    operation: MapOperation::UnionTagToExpr(cases),
+                                });
+                            }
+                            // TODO: This NEEDS to be validated earlier.
+                            // The way it's done right now is a hack.
+                            _ => unreachable!(),
+                        }
                     }
                     _ => unimplemented!(),
                 }
 
                 prev_res = next_res;
-            },
+            }
+            _ => unimplemented!(),
         }
     }
 

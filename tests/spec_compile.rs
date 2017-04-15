@@ -51,8 +51,8 @@ fn container_virtual_field() {
 def_native("u8");
 
 def("test") => container {
-    virtual_field("field_1", ref: "field_2", prop: "length") => u8;
-    field("field_2") => array(ref: "../field_1") => u8;
+    virtual_field("field_1", value: "field_2/@length") => u8;
+    field("field_2") => array(length: "../field_1") => u8;
 };
 "#));
 }
@@ -64,7 +64,7 @@ fn container_virtual_field_nonexistent_ref() {
 def_native("u8");
 
 def("test") => container {
-    virtual_field("field_1", ref: "field_2", prop: "length") => u8;
+    virtual_field("field_1", value: "field_2/@length") => u8;
 };
 "#));
 }
