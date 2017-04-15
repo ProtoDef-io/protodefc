@@ -15,8 +15,6 @@ pub struct ArrayVariant {
 
     pub child: WeakTypeContainer,
     pub child_handle: SpecChildHandle,
-
-    pub count_type: Option<TypeSpecContainer>,
 }
 impl TypeVariant for ArrayVariant {
     default_resolve_child_name_impl!();
@@ -25,10 +23,11 @@ impl TypeVariant for ArrayVariant {
         VariantType::Array
     }
 
-    fn has_spec_property(&self, _data: &TypeData, name: &str)
+    fn has_spec_property(&self, data: &TypeData, name: &str)
                     -> Result<Option<WeakTypeSpecContainer>> {
         match name {
-            "length" => Ok(Some(self.count_type.clone().unwrap().downgrade())),
+            "length" => Ok(data.get_reference_data(self.count_handle)
+                .target_type_spec.clone().map(|t| t.follow().downgrade())),
             _ => bail!("array variant has no property '{}'"),
         }
     }
@@ -43,6 +42,16 @@ impl TypeVariant for ArrayVariant {
                     size: ArraySize::Dynamic,
                     child: child.data.type_spec.clone().unwrap(),
                 }).into());
+                Ok(())
+            }
+            CompilePass::ValidateTypes => {
+                let type_spec_rc = data.get_reference_data(self.count_handle)
+                    .target_type_spec.clone().unwrap().follow();
+                let type_spec = type_spec_rc.borrow();
+                println!("{:?}", type_spec);
+
+                ensure!(type_spec.variant.is_integer(),
+                        "array length property must be integer");
                 Ok(())
             }
             _ => Ok(()),
@@ -67,12 +76,6 @@ impl ArrayVariant {
 
                 child: child.downgrade(),
                 child_handle: child_handle,
-
-                // TODO
-                count_type: Some(TypeSpecVariant::Integer(IntegerSpec {
-                    signed: Signedness::Signed,
-                    size: IntegerSize::B64,
-                }).into()),
             }),
             data: data,
         })

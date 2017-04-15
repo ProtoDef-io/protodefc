@@ -1,14 +1,25 @@
 use ::errors::*;
 use ::ir::spec::{Type, TypeContainer, CompilePass};
 use ::ir::compilation_unit::{CompilationUnit, TypeKind};
+use ::ir::type_spec::TypeSpecVariant;
 
 pub fn run(cu: &CompilationUnit) -> Result<()> {
     cu.each_type(&mut |typ_container| {
         let named_typ = typ_container.borrow();
 
+        let type_spec_rc = named_typ.type_spec.clone();
+        let mut type_spec = type_spec_rc.borrow_mut();
+
         match named_typ.typ {
-            TypeKind::Type(ref typ) => do_run_type(typ)?,
-            _ => ()
+            TypeKind::Type(ref typ) => {
+                do_run_type(typ)?;
+                type_spec.variant = TypeSpecVariant::Referenced(
+                    Some(typ.borrow().data.type_spec.clone().unwrap().downgrade()))
+            }
+            TypeKind::Native(ref inner) => {
+                type_spec.variant = TypeSpecVariant::Referenced(
+                    Some(inner.clone().downgrade()));
+            }
         }
 
         Ok(())

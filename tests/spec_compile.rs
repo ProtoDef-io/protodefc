@@ -35,7 +35,7 @@ fn compile(spec: &str) -> Result<CompilationUnit> {
 #[test]
 fn simple_container() {
     unwrap_ok!(compile(r#"
-@type "integer"
+@type integer("u8")
 def_native("u8");
 
 def("test") => container {
@@ -47,7 +47,7 @@ def("test") => container {
 #[test]
 fn container_virtual_field() {
     unwrap_ok!(compile(r#"
-@type "integer"
+@type integer("u8")
 def_native("u8");
 
 def("test") => container {
@@ -60,7 +60,7 @@ def("test") => container {
 #[test]
 fn container_virtual_field_nonexistent_ref() {
     unwrap_error!(compile(r#"
-@type "integer"
+@type integer("u8")
 def_native("u8");
 
 def("test") => container {

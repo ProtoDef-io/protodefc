@@ -3,7 +3,7 @@ use ::errors::*;
 use ::ir::spec::variant::*;
 use ::ir::spec::reference::Reference;
 
-use super::ast::{Ident, Statement, Value};
+use super::super::ast::{Ident, Statement, Value};
 
 pub fn type_def_to_ir(stmt: &Statement) -> Result<TypeContainer> {
     let item = stmt.items[0].item().unwrap();

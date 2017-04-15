@@ -119,6 +119,16 @@ impl TypeSpecContainer {
     pub fn new_not_assigned() -> Option<TypeSpecContainer> {
         None
     }
+
+    pub fn follow(self) -> TypeSpecContainer {
+        match &self.borrow().variant {
+            &TypeSpecVariant::Referenced(ref inner) =>
+                return inner.clone().unwrap().upgrade(),
+            _ => (),
+        }
+        self
+    }
+
 }
 
 impl TypeSpecVariant {
@@ -130,6 +140,21 @@ impl TypeSpecVariant {
                     .map(|f| f.type_spec.clone())
             },
             _ => None
+        }
+    }
+
+    pub fn is_valid(&self) -> bool {
+        match *self {
+            TypeSpecVariant::Referenced(None) => false,
+            _ => true,
+        }
+    }
+
+    pub fn is_integer(&self) -> bool {
+        assert!(self.is_valid(), "type spec is not assigned");
+        match *self {
+            TypeSpecVariant::Integer(_) => true,
+            _ => false,
         }
     }
 }

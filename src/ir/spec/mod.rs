@@ -50,4 +50,5 @@ pub enum CompilePass<'a> {
     ResolveReferencedTypes(&'a TypePath, &'a CompilationUnit),
     MakeTypeSpecs,
     GenerateFieldAccessOrder,
+    ValidateTypes,
 }

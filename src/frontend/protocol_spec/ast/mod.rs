@@ -15,7 +15,7 @@ pub struct Block {
 
 #[derive(Debug, Clone)]
 pub struct Statement {
-    pub attributes: HashMap<String, Value>,
+    pub attributes: HashMap<String, Vec<Value>>,
     pub items: Vec<Value>,
 }
 

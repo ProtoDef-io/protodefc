@@ -20,23 +20,28 @@ fn print_block(block: &Block, out: &mut String, level: u64) {
     }
 }
 
+fn print_values(values: &[Value], out: &mut String, level: u64) {
+    pad_level(out, level);
+    for (idx, item) in values.iter().enumerate() {
+        print_value(item, out, level);
+        if idx != values.len() - 1 {
+            out.push_str(" => ");
+        }
+    }
+}
+
 fn print_statement(stmt: &Statement, out: &mut String, level: u64) {
     for (attr_name, attr_value) in &stmt.attributes {
         pad_level(out, level);
         out.push_str("@");
         out.push_str(attr_name);
         out.push_str(" ");
-        print_value(attr_value, out, level);
+        print_values(attr_value, out, level);
         out.push_str("\n");
     }
 
-    pad_level(out, level);
-    for (idx, item) in stmt.items.iter().enumerate() {
-        print_value(item, out, level);
-        if idx != stmt.items.len() - 1 {
-            out.push_str(" => ");
-        }
-    }
+    print_values(&stmt.items, out, level);
+
     out.push_str(";\n");
 }
 

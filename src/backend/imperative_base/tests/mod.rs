@@ -10,7 +10,7 @@ fn test_compile(spec: &str) {
 #[test]
 fn simple_scalar() {
     test_compile(r#"
-@type "integer"
+@type integer("u8")
 def_native("u8");
 
 def("test") => u8;
@@ -20,7 +20,7 @@ def("test") => u8;
 #[test]
 fn container() {
     test_compile(r#"
-@type "integer"
+@type integer("u8")
 def_native("u8");
 
 def("test") => container {
@@ -28,7 +28,7 @@ def("test") => container {
 };
 "#);
     test_compile(r#"
-@type "integer"
+@type integer("u8")
 def_native("u8");
 
 def("test") => container(virtual: "true") {
@@ -36,7 +36,7 @@ def("test") => container(virtual: "true") {
 };
 "#);
     test_compile(r#"
-@type "integer"
+@type integer("u8")
 def_native("u8");
 
 def("test") => container {

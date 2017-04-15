@@ -29,30 +29,30 @@ named!(root<&str, Block>, do_parse!(
 ));
 
 named!(block_inner<&str, Block>, do_parse!(
-    s: many0!(complete!(statement)) >>
+    s: many0!(terminated!(complete!(statement), terminator)) >>
         (Block {
             statements: s,
         })
 ));
 
+named!(statement_items<&str, Vec<Value>>,
+       separated_nonempty_list!(contains_arrow, value));
+
 named!(statement<&str, Statement>, do_parse!(
     attributes: many0!(complete!(attribute)) >>
-    items: terminated!(
-        separated_nonempty_list!(contains_arrow, value),
-        terminator
-    ) >>
+        items: statement_items >>
         (Statement {
             items: items,
             attributes: attributes.iter().cloned().collect(),
         })
 ));
 
-named!(attribute<&str, (String, Value)>, do_parse!(
+named!(attribute<&str, (String, Vec<Value>)>, do_parse!(
     space >>
         tag!("@") >>
         ident: base_identifier >>
         space >>
-        value: value >>
+        value: statement_items >>
         (ident.into(), value)
 ));
 

@@ -11,6 +11,7 @@ pub mod resolve_context;
 pub mod assign_type_spec;
 //pub mod generate_type_spec;
 pub mod generate_field_access_order;
+pub mod validate_types;
 
 // Iterate between making types and resolving references until there
 // are no more changes.
@@ -37,7 +38,9 @@ pub fn run_passes(cu: &mut CompilationUnit) -> Result<()> {
 
     resolve_reference::run(cu)?;
 
-    generate_field_access_order::run(cu)?;
+    validate_types::run(cu)?;
+
+    //generate_field_access_order::run(cu)?;
 
     // TODO: Validate that all nodes have a valid type_spec
     // TODO: Validate that all nodes have resolved all references

@@ -48,7 +48,7 @@ assert.deepEqual(ret, [ref_js_data, ref_length]);
 fn simple_scalar() {
     test_single(
         r#"
-@type "integer"
+@type integer("u8")
 def_native("u8");
 
 def("test") => u8;
@@ -62,7 +62,7 @@ def("test") => u8;
 fn container() {
     test_single(
         r#"
-@type "integer"
+@type integer("u8")
 def_native("u8");
 
 def("test") => container {
@@ -79,7 +79,7 @@ def("test") => container {
 fn array() {
     test_single(
         r#"
-@type "integer"
+@type integer("u8")
 def_native("u8");
 
 def("test") => container(virtual: "true") {
@@ -95,7 +95,7 @@ def("test") => container(virtual: "true") {
 #[test]
 fn union() {
     let spec = r#"
-@type "integer"
+@type integer("u8")
 def_native("u8");
 
 def("test") => container(virtual: "true") {
