@@ -1,4 +1,5 @@
 use ::ir::spec::{TypeContainer, WeakTypeContainer};
+use ::ir::type_spec::TypeSpecContainer;
 use ::ir::compilation_unit::{CompilationUnit, TypeKind};
 use ::ir::spec::data::{ReferencePathEntryData, ReferenceData,
                        ReferencePathEntryOperation};
@@ -102,56 +103,91 @@ fn resolve(root: TypeContainer, target: &mut ReferenceData,
     }
 
     for item in &target.reference.items {
-        match *item {
-            ReferenceItem::Down(ref name) => {
-                path_entries.push(ReferencePathEntryData {
-                    operation: ReferencePathEntryOperation::Down(name.0.clone()),
-                    node: current_node.clone().map(|i| i.downgrade()),
-                    type_spec: current_type.downgrade(),
-                });
-
-                let type_next = current_type.borrow().variant
-                    .get_child_name(&name.0)
-                    .ok_or_else(|| format!("type has no field '{}'", name.0))?;
-                current_type = type_next;
-
-                let mut node_next = None;
-                if let Some(ref current_node_inner_rc) = current_node {
-                    let node_inner = current_node_inner_rc.borrow();
-                    node_next = node_inner.variant.to_variant()
-                        .resolve_child_name(&node_inner.data, &name.0)
-                        .ok().map(|i| i.upgrade());
-                }
+        match resolve_item(item, &mut path_entries, current_node, current_type)? {
+            ResolveItemResult::NotAvailible => {
+                pass.mark_unfinished();
+                return Ok(());
+            }
+            ResolveItemResult::Ok((spec_next, node_next)) => {
+                current_type = spec_next;
                 current_node = node_next;
-            },
-            ReferenceItem::Property(ref name) => {
-                if let Some(ref current_node_inner_rc) = current_node {
-                    path_entries.push(ReferencePathEntryData {
-                        operation: ReferencePathEntryOperation::NodeProperty(name.0.clone()),
-                        node: current_node.clone().map(|i| i.downgrade()),
-                        type_spec: current_type.downgrade(),
-                    });
-
-                    let node_inner = current_node_inner_rc.borrow();
-                    let prop_type = node_inner.variant.to_variant()
-                        .has_spec_property(&node_inner.data, &name.0)?;
-
-                    if let Some(ref inner) = prop_type {
-                        current_type = inner.upgrade();
-                    } else {
-                        pass.mark_unfinished();
-                        return Ok(());
-                    }
-                } else {
-                    unimplemented!()
-                }
-                current_node = None;
-            },
+            }
         }
     }
 
     target.path = Some(path_entries);
     target.target_type_spec = Some(current_type);
     pass.mark_changed();
+
+    validate_causality(target)?;
+
+    Ok(())
+}
+
+enum ResolveItemResult {
+    NotAvailible,
+    Ok((TypeSpecContainer, Option<TypeContainer>))
+}
+
+fn resolve_item(item: &ReferenceItem, path_entries: &mut Vec<ReferencePathEntryData>,
+                current_node: Option<TypeContainer>, current_type: TypeSpecContainer,
+                ) -> Result<ResolveItemResult> {
+    let type_next;
+    let node_next;
+
+    match *item {
+        ReferenceItem::Down(ref name) => {
+            path_entries.push(ReferencePathEntryData {
+                operation: ReferencePathEntryOperation::Down(name.0.clone()),
+                node: current_node.clone().map(|i| i.downgrade()),
+                type_spec: current_type.downgrade(),
+            });
+
+            type_next = current_type.borrow().variant
+                .get_child_name(&name.0)
+                .ok_or_else(|| format!("type has no field '{}'", name.0))?;
+
+            if let Some(ref current_node_inner_rc) = current_node {
+                let node_inner = current_node_inner_rc.borrow();
+                node_next = node_inner.variant.to_variant()
+                    .resolve_child_name(&node_inner.data, &name.0)
+                    .ok().map(|i| i.upgrade());
+            } else {
+                node_next = None;
+            }
+
+            return Ok(ResolveItemResult::Ok((type_next, node_next)));
+        },
+        ReferenceItem::Property(ref name) => {
+            node_next = None;
+
+            if let Some(ref current_node_inner_rc) = current_node {
+                path_entries.push(ReferencePathEntryData {
+                    operation: ReferencePathEntryOperation::NodeProperty(name.0.clone()),
+                    node: current_node.clone().map(|i| i.downgrade()),
+                    type_spec: current_type.downgrade(),
+                });
+
+                let node_inner = current_node_inner_rc.borrow();
+                let prop_type_res = node_inner.variant.to_variant()
+                    .has_spec_property(&node_inner.data, &name.0);
+
+                if let Some(ref prop_type) = prop_type_res.ok() {
+                    if let Some(ref inner) = *prop_type {
+                        type_next = inner.upgrade();
+                        return Ok(ResolveItemResult::Ok((type_next, node_next)));
+                    } else {
+                        return Ok(ResolveItemResult::NotAvailible);
+                    }
+                }
+            }
+
+            unimplemented!();
+        },
+    }
+
+}
+
+fn validate_causality(target: &mut ReferenceData) -> Result<()> {
     Ok(())
 }
