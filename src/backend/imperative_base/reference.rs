@@ -142,7 +142,13 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                             operation: MapOperation::ArrayLength,
                         });
                     }
-                    _ => unimplemented!(),
+                    TypeSpecPropertyVariant::BinarySize(ref encoding) => {
+                        ops.push(Operation::MapValue {
+                            input: prev_res.into(),
+                            output: next_res.clone().into(),
+                            operation: MapOperation::BinarySize(encoding.clone()),
+                        })
+                    }
                 }
 
                 prev_res = next_res;

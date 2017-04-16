@@ -44,6 +44,14 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                 b.var_assign(output_var.clone(),
                              format!("{}.length", input_var).into());
             }
+            ib::Operation::MapValue { ref input, ref output,
+                                      operation: ib::MapOperation::BinarySize(_) } => {
+                let input_var = &input.0;
+                let output_var = &output.0;
+
+                b.var_assign(output_var.clone(),
+                             format!("Buffer.byteLength({}, 'utf8')", input_var).into());
+            }
             ib::Operation::MapValue {
                 ref input, ref output,
                 operation: ib::MapOperation::UnionTagToExpr(ref cases) } => {

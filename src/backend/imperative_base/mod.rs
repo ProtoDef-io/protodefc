@@ -9,6 +9,7 @@ pub mod reference;
 mod tests;
 
 use ::ir::compilation_unit::{TypePath, NamedTypeContainer};
+use ::ir::type_spec::BinaryEncoding;
 
 #[derive(Debug)]
 pub struct Block(pub Vec<Operation>);
@@ -83,6 +84,7 @@ pub enum Expr {
 #[derive(Debug)]
 pub enum MapOperation {
     ArrayLength,
+    BinarySize(BinaryEncoding),
     UnionTagToExpr(Vec<UnionTagCase>),
     LiteralToExpr(Vec<LiteralCase>),
 }
