@@ -2,6 +2,7 @@ use ::ir::compilation_unit::TypePath;
 use ::ir::spec::{TypeContainer, WeakTypeContainer};
 use ::ir::spec::reference::Reference;
 use ::ir::type_spec::{TypeSpecContainer, WeakTypeSpecContainer};
+use ::ir::type_spec::property::TypeSpecProperty;
 
 #[derive(Debug)]
 pub struct TypeData {
@@ -50,7 +51,7 @@ pub enum ReferencePathEntryOperation {
     Down(String),
     NodeProperty(String),
     TypeProperty(String),
-    TypeSpecProperty(String),
+    TypeSpecProperty(TypeSpecProperty),
 }
 
 impl TypeData {

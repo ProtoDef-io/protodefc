@@ -18,7 +18,7 @@ pub fn run(cu: &CompilationUnit) -> Result<()> {
             }
             TypeKind::Native(ref inner) => {
                 type_spec.variant = TypeSpecVariant::Referenced(
-                    Some(inner.clone().downgrade()));
+                    Some(inner.type_spec.clone().downgrade()));
             }
         }
 

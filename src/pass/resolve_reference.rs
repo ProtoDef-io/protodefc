@@ -103,7 +103,7 @@ fn resolve(root: TypeContainer, target: &mut ReferenceData,
     }
 
     for item in &target.reference.items {
-        match resolve_item(item, &mut path_entries, current_node, current_type)? {
+        match resolve_item(item, &mut path_entries, current_node, current_type.follow())? {
             ResolveItemResult::NotAvailible => {
                 pass.mark_unfinished();
                 return Ok(());
@@ -145,7 +145,7 @@ fn resolve_item(item: &ReferenceItem, path_entries: &mut Vec<ReferencePathEntryD
 
             type_next = current_type.borrow().variant
                 .get_child_name(&name.0)
-                .ok_or_else(|| format!("type has no field '{}'", name.0))?;
+                .ok_or_else(|| format!("type has no field '{}'", name.0))?.follow();
 
             if let Some(ref current_node_inner_rc) = current_node {
                 let node_inner = current_node_inner_rc.borrow();
@@ -162,19 +162,19 @@ fn resolve_item(item: &ReferenceItem, path_entries: &mut Vec<ReferencePathEntryD
             node_next = None;
 
             if let Some(ref current_node_inner_rc) = current_node {
-                path_entries.push(ReferencePathEntryData {
-                    operation: ReferencePathEntryOperation::NodeProperty(name.0.clone()),
-                    node: current_node.clone().map(|i| i.downgrade()),
-                    type_spec: current_type.downgrade(),
-                });
-
                 let node_inner = current_node_inner_rc.borrow();
                 let prop_type_res = node_inner.variant.to_variant()
                     .has_spec_property(&node_inner.data, &name.0);
 
                 if let Some(ref prop_type) = prop_type_res.ok() {
+                    path_entries.push(ReferencePathEntryData {
+                        operation: ReferencePathEntryOperation::NodeProperty(name.0.clone()),
+                        node: current_node.clone().map(|i| i.downgrade()),
+                        type_spec: current_type.downgrade(),
+                    });
+
                     if let Some(ref inner) = *prop_type {
-                        type_next = inner.upgrade();
+                        type_next = inner.upgrade().follow();
                         return Ok(ResolveItemResult::Ok((type_next, node_next)));
                     } else {
                         return Ok(ResolveItemResult::NotAvailible);
@@ -182,7 +182,17 @@ fn resolve_item(item: &ReferenceItem, path_entries: &mut Vec<ReferencePathEntryD
                 }
             }
 
-            unimplemented!();
+            let type_inner = current_type.borrow();
+            let property = type_inner.variant.has_property(&name.0)?;
+            type_next = property.type_spec.clone().follow();
+
+            path_entries.push(ReferencePathEntryData {
+                operation: ReferencePathEntryOperation::TypeSpecProperty(property),
+                node: current_node.clone().map(|i| i.downgrade()),
+                type_spec: current_type.downgrade(),
+            });
+
+            return Ok(ResolveItemResult::Ok((type_next, node_next)));
         },
     }
 

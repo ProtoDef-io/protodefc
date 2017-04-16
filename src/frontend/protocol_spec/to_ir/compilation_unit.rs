@@ -1,7 +1,7 @@
 use ::errors::*;
 use ::ir::IdGenerator;
 use ::ir::compilation_unit::{CompilationUnit, NSPath, CompilationUnitNS, NamedType,
-                             TypePath, TypeKind};
+                             TypePath, TypeKind, NativeType};
 use ::ir::type_spec::{TypeSpecVariant, IntegerSpec, IntegerSize, Signedness};
 
 use super::super::ast;
@@ -53,6 +53,7 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
                     typ: TypeKind::Type(typ),
                     type_id: gen.get(),
                     type_spec: TypeSpecVariant::Referenced(None).into(),
+                    arguments: vec![],
                 })?;
             }
             "def_native" => {
@@ -77,9 +78,12 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
                         path: ns_path.clone(),
                         name: name.to_owned(),
                     },
-                    typ: TypeKind::Native(target_type),
+                    typ: TypeKind::Native(NativeType {
+                        type_spec: target_type,
+                    }),
                     type_id: gen.get(),
                     type_spec: TypeSpecVariant::Referenced(None).into(),
+                    arguments: super::native_type::block_to_args(&head_item.block)?,
                 })?;
             }
             "namespace" => {

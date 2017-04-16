@@ -123,18 +123,6 @@ impl ValuesToIr for ArrayVariant {
     }
 }
 
-impl ValuesToIr for SimpleScalarVariant {
-    fn values_to_ir(items: &[Value]) -> Result<TypeContainer> {
-        let scalar_item = items[0].item().unwrap();
-
-        ensure!(scalar_item.is_name_only(),
-                "simple scalars takes no arguments and no block");
-
-        let path = scalar_item.name.to_type_path();
-        Ok(SimpleScalarVariant::new(path))
-    }
-}
-
 impl ValuesToIr for UnionVariant {
     fn values_to_ir(items: &[Value]) -> Result<TypeContainer> {
         let union_item = items[0].item().unwrap();
@@ -175,5 +163,24 @@ impl ValuesToIr for UnionVariant {
         }
 
         builder.build().map_err(|e| e.into())
+    }
+}
+
+impl ValuesToIr for SimpleScalarVariant {
+    fn values_to_ir(items: &[Value]) -> Result<TypeContainer> {
+        let scalar_item = items[0].item().unwrap();
+
+        //ensure!(scalar_item.is_name_only(),
+        //        "simple scalars takes no arguments and no block");
+
+        let mut all_tagged = scalar_item.all_tagged()?;
+        let arguments = all_tagged.drain()
+            .map(|(name, value)| {
+                value.reference().map(|reference| (name, reference))
+            })
+            .collect::<Result<Vec<(String, Reference)>>>()?;
+
+        let path = scalar_item.name.to_type_path();
+        Ok(SimpleScalarVariant::new(path, arguments))
     }
 }

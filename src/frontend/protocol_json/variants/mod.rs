@@ -17,6 +17,6 @@ pub use self::container::ContainerReader;
 pub struct ScalarReader;
 impl FromProtocolJson for ScalarReader {
     fn from_json(name: TypePath, _arg: &JsonValue) -> Result<TypeContainer> {
-        Ok(SimpleScalarVariant::new(name))
+        Ok(SimpleScalarVariant::new(name, vec![]))
     }
 }

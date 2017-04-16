@@ -1,8 +1,10 @@
 use ::ir::TargetType;
 use ::ir::spec::{Type, TypeVariant, TypeData, WeakTypeContainer, TypeContainer, CompilePass};
+use ::ir::spec::data::SpecReferenceHandle;
 use ::ir::spec::variant::{Variant, VariantType};
+use ::ir::spec::reference::Reference;
 use ::ir::type_spec::WeakTypeSpecContainer;
-use ::ir::compilation_unit::{TypePath, NamedTypeContainer};
+use ::ir::compilation_unit::{TypePath, NamedTypeContainer, TypeKind};
 use ::errors::*;
 
 /// This is a simple terminal scalar.
@@ -16,6 +18,15 @@ use ::errors::*;
 pub struct SimpleScalarVariant {
     pub target: Option<NamedTypeContainer>,
     pub target_type: Option<TargetType>,
+
+    pub arguments: Vec<SimpleScalarArgument>,
+}
+
+#[derive(Debug)]
+pub struct SimpleScalarArgument {
+    pub name: String,
+    pub reference: Reference,
+    pub handle: Option<SpecReferenceHandle>,
 }
 
 impl TypeVariant for SimpleScalarVariant {
@@ -33,8 +44,22 @@ impl TypeVariant for SimpleScalarVariant {
                 let target_resolved = cu.resolve_type(
                     &data.name.in_context(&path.path))
                     .chain_err(|| format!("while resolving type of simple_scalar"))?;
-                self.target = Some(target_resolved);
 
+                {
+                    let target_inner = target_resolved.borrow();
+                    for argument in &target_inner.arguments {
+                        let reference_arg = self.arguments.iter_mut()
+                            .find(|arg| arg.name == argument.name)
+                            .ok_or_else(|| format!("required argument '{}' was not supplied",
+                                                   argument.name))?;
+
+                        let reference_handle = data.add_reference(
+                            reference_arg.reference.clone(), argument.access_time);
+                        reference_arg.handle = Some(reference_handle);
+                    }
+                }
+
+                self.target = Some(target_resolved);
                 Ok(())
             }
             CompilePass::MakeTypeSpecs => {
@@ -44,20 +69,6 @@ impl TypeVariant for SimpleScalarVariant {
                 data.type_spec = Some(named_target.type_spec.clone());
                 Ok(())
             }
-            //CompilePass::PropagateTypes { ref mut has_changed } => {
-            //    let target_named_type = self.target.clone().unwrap();
-            //    let target_named_type_inner = target_named_type.borrow();
-            //    let result_type = target_named_type_inner.typ.get_result_type();
-
-            //    if result_type != self.target_type {
-            //        **has_changed = true;
-            //    }
-
-            //    self.target_type = result_type;
-
-            //    Ok(())
-
-            //}
             _ => Ok(()),
         }
     }
@@ -65,20 +76,29 @@ impl TypeVariant for SimpleScalarVariant {
 
 impl SimpleScalarVariant {
 
-    pub fn new(path: TypePath) -> TypeContainer {
-        SimpleScalarVariant::with_target_type(path, None)
+    pub fn new(path: TypePath, references: Vec<(String, Reference)>) -> TypeContainer {
+        SimpleScalarVariant::with_target_type(path, references, None)
     }
 
-    pub fn with_target_type(path: TypePath, target_type: Option<TargetType>)
-                            -> TypeContainer {
+    pub fn with_target_type(path: TypePath, mut references: Vec<(String, Reference)>,
+                            target_type: Option<TargetType>) -> TypeContainer {
         let mut data = TypeData::default();
         data.name = path;
+
+        let arguments = references.drain(..)
+            .map(|(string, reference)| SimpleScalarArgument {
+                name: string,
+                reference: reference,
+                handle: None,
+            })
+            .collect();
 
         TypeContainer::new(Type {
             data: data,
             variant: Variant::SimpleScalar(SimpleScalarVariant {
                 target: None,
                 target_type: target_type,
+                arguments: arguments,
             }),
         })
     }

@@ -4,6 +4,7 @@ use ::ir::spec::reference::ReferenceItem;
 use ::ir::spec::data::{SpecReferenceHandle, ReferencePathEntryData,
                        ReferencePathEntryOperation};
 use ::ir::type_spec::{TypeSpecVariant, EnumSpec};
+use ::ir::type_spec::property::TypeSpecPropertyVariant;
 use super::{Var, Block, Operation, Expr, MapOperation, Literal, UnionTagCase};
 use super::utils::*;
 
@@ -74,18 +75,21 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
 
                 prev_res = next_res;
             },
-            (_, &ReferencePathEntryData { operation: ReferencePathEntryOperation::NodeProperty(ref name), ref node, ref type_spec, .. }) => {
+            (_, &ReferencePathEntryData {
+                operation: ReferencePathEntryOperation::NodeProperty(ref name),
+                ref node, ref type_spec, .. }) => {
+
                 let next_res = var_for(&format!("int_val_{}", res_num), data);
                 res_num += 1;
 
                 match name.as_ref() {
-                    "length" => {
-                        ops.push(Operation::MapValue {
-                            input: prev_res.into(),
-                            output: next_res.clone().into(),
-                            operation: MapOperation::ArrayLength,
-                        });
-                    }
+                    //"length" => {
+                    //    ops.push(Operation::MapValue {
+                    //        input: prev_res.into(),
+                    //        output: next_res.clone().into(),
+                    //        operation: MapOperation::ArrayLength,
+                    //    });
+                    //}
                     "tag" => {
                         let node_rc = node.clone().unwrap().upgrade();
                         let node_inner = node_rc.borrow();
@@ -120,9 +124,30 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                     }
                     _ => unimplemented!(),
                 }
+                prev_res = next_res;
+            }
+
+            (_, &ReferencePathEntryData {
+                operation: ReferencePathEntryOperation::TypeSpecProperty(ref property),
+                ref type_spec, .. }) => {
+
+                let next_res = var_for(&format!("int_val_{}", res_num), data);
+                res_num += 1;
+
+                match property.variant {
+                    TypeSpecPropertyVariant::ArrayLength => {
+                        ops.push(Operation::MapValue {
+                            input: prev_res.into(),
+                            output: next_res.clone().into(),
+                            operation: MapOperation::ArrayLength,
+                        });
+                    }
+                    _ => unimplemented!(),
+                }
 
                 prev_res = next_res;
             }
+
             _ => unimplemented!(),
         }
     }

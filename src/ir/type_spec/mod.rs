@@ -1,3 +1,5 @@
+pub mod property;
+
 use ::rc_container::{Container, WeakContainer};
 
 pub type TypeSpecContainer = Container<TypeSpec>;
@@ -101,7 +103,7 @@ pub struct FloatSpec {
     pub size: FloatSize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BinaryEncoding {
     Raw,
     Utf8,

@@ -6,6 +6,16 @@ def_native("u64");
 
 def_native("f64");
 
+@type binary("utf8")
+def_native("sized_string") {
+    argument("size", stage: "read") => integer("usize");
+};
+
+def("u8_string") => container(virtual: "true") {
+    virtual_field("size", value: "string/@size") => u8;
+    field("string") => sized_string(size: "../size");
+};
+
 def("position") => container {
     field("x") => ::f64;
     field("y") => ::f64;

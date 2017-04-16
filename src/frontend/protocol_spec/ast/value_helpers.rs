@@ -1,4 +1,5 @@
 use super::{Item, Value};
+use std::collections::HashMap;
 
 impl Item {
 
@@ -71,6 +72,21 @@ impl Item {
 
     pub fn is_name_only(&self) -> bool {
         self.args.len() == 0 && self.block.statements.len() == 0
+    }
+
+    pub fn all_tagged(&self) -> Result<HashMap<String, Value>, String> {
+        let mut tagged_values: HashMap<String, Value> = HashMap::new();
+
+        for arg in &self.args {
+            if let Some(ref tag) = arg.tag {
+                ensure!(!tagged_values.contains_key(tag),
+                        "duplicate tagged argument '{}'", tag);
+                tagged_values.insert(tag.to_owned(), arg.value.clone());
+            }
+        }
+
+        let drain = tagged_values.drain();
+        Ok(drain.collect())
     }
 
 }

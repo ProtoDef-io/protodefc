@@ -23,13 +23,9 @@ impl TypeVariant for ArrayVariant {
         VariantType::Array
     }
 
-    fn has_spec_property(&self, data: &TypeData, name: &str)
+    fn has_spec_property(&self, _data: &TypeData, _name: &str)
                     -> Result<Option<WeakTypeSpecContainer>> {
-        match name {
-            "length" => Ok(data.get_reference_data(self.count_handle)
-                .target_type_spec.clone().map(|t| t.follow().downgrade())),
-            _ => bail!("array variant has no property '{}'"),
-        }
+        bail!("array variant has no property '{}'")
     }
 
     fn do_compile_pass(&mut self, data: &mut TypeData, pass: &mut CompilePass)

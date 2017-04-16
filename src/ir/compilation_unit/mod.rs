@@ -5,6 +5,7 @@ use ::std::fmt;
 
 use ::rc_container::{Container, WeakContainer};
 use ::ir::type_spec::TypeSpecContainer;
+use ::ir::spec::data::ReferenceAccessTime;
 
 pub type NamedTypeContainer = Container<NamedType>;
 pub type WeakNamedTypeContainer = WeakContainer<NamedType>;
@@ -26,17 +27,24 @@ pub struct NamedType {
     pub typ: TypeKind,
     pub type_spec: TypeSpecContainer,
     pub type_id: u64,
+    pub arguments: Vec<NamedTypeArgument>,
 }
 
 #[derive(Debug, Clone)]
 pub enum TypeKind {
-    Native(TypeSpecContainer),
+    Native(NativeType),
     Type(TypeContainer),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NativeType {
-    pub path: TypePath,
+    pub type_spec: TypeSpecContainer,
+}
+#[derive(Debug, Clone)]
+pub struct NamedTypeArgument {
+    pub name: String,
+    pub access_time: ReferenceAccessTime,
+    pub type_spec: TypeSpecContainer,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -233,7 +241,7 @@ impl TypeKind {
 
     pub fn get_result_type(&self) -> Option<TypeSpecContainer> {
         match *self {
-            TypeKind::Native(ref typ) => Some(typ.clone()),
+            TypeKind::Native(ref typ) => Some(typ.type_spec.clone()),
             TypeKind::Type(ref container) => {
                 let inner = container.borrow();
                 Some(inner.data.get_result_type())

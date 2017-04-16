@@ -7,7 +7,10 @@ var type_2_deserialize = types["::u64"]["deserialize"];
 var type_3_size_of = types["::f64"]["size_of"];
 var type_3_serialize = types["::f64"]["serialize"];
 var type_3_deserialize = types["::f64"]["deserialize"];
-function type_4_size_of(input) {
+var type_4_size_of = types["::sized_string"]["size_of"];
+var type_4_serialize = types["::sized_string"]["serialize"];
+var type_4_deserialize = types["::sized_string"]["deserialize"];
+function type_5_size_of(input) {
     var count = 0;
     var type_var_4 = input;
     {
@@ -29,7 +32,7 @@ function type_4_size_of(input) {
     }
     return count;
 }
-function type_4_serialize(input, buffer, offset) {
+function type_5_serialize(input, buffer, offset) {
     var type_var_4 = input;
     {
         var type_var_1 = type_var_4["x"];
@@ -47,7 +50,7 @@ function type_4_serialize(input, buffer, offset) {
     }
     return offset;
 }
-function type_4_deserialize(buffer, offset) {
+function type_5_deserialize(buffer, offset) {
     {
         {
             var [type_var_1, offset] = type_3_deserialize(buffer, offset);
@@ -62,7 +65,7 @@ function type_4_deserialize(buffer, offset) {
     }
     return [type_var_4, offset];
 }
-function type_5_size_of(input) {
+function type_6_size_of(input) {
     var count = 0;
     var type_var_11 = input;
     {
@@ -87,7 +90,7 @@ function type_5_size_of(input) {
             count = count + size;
         }
         {
-            var size = type_4_size_of(type_var_6);
+            var size = type_5_size_of(type_var_6);
             count = count + size;
         }
         {
@@ -113,7 +116,7 @@ function type_5_size_of(input) {
     }
     return count;
 }
-function type_5_serialize(input, buffer, offset) {
+function type_6_serialize(input, buffer, offset) {
     var type_var_11 = input;
     {
         var type_var_5 = type_var_11["entity_id"];
@@ -136,7 +139,7 @@ function type_5_serialize(input, buffer, offset) {
             var offset = type_2_serialize(type_var_5, buffer, offset);
         }
         {
-            var offset = type_4_serialize(type_var_6, buffer, offset);
+            var offset = type_5_serialize(type_var_6, buffer, offset);
         }
         {
             var offset = type_1_serialize(type_var_7, buffer, offset);
@@ -160,13 +163,13 @@ function type_5_serialize(input, buffer, offset) {
     }
     return offset;
 }
-function type_5_deserialize(buffer, offset) {
+function type_6_deserialize(buffer, offset) {
     {
         {
             var [type_var_5, offset] = type_2_deserialize(buffer, offset);
         }
         {
-            var [type_var_6, offset] = type_4_deserialize(buffer, offset);
+            var [type_var_6, offset] = type_5_deserialize(buffer, offset);
         }
         {
             var [type_var_7, offset] = type_1_deserialize(buffer, offset);
@@ -196,7 +199,7 @@ function type_5_deserialize(buffer, offset) {
     }
     return [type_var_11, offset];
 }
-function type_6_size_of(input) {
+function type_7_size_of(input) {
     var count = 0;
     var type_var_20 = input;
     {
@@ -254,7 +257,7 @@ function type_6_size_of(input) {
                 case "spawn_entity": {
                     var type_var_18 = type_var_19.data;
                     {
-                        var size = type_5_size_of(type_var_18);
+                        var size = type_6_size_of(type_var_18);
                         count = count + size;
                     }
                     break;
@@ -264,7 +267,7 @@ function type_6_size_of(input) {
     }
     return count;
 }
-function type_6_serialize(input, buffer, offset) {
+function type_7_serialize(input, buffer, offset) {
     var type_var_20 = input;
     {
         var type_var_19 = type_var_20;
@@ -317,7 +320,7 @@ function type_6_serialize(input, buffer, offset) {
                 case "spawn_entity": {
                     var type_var_18 = type_var_19.data;
                     {
-                        var offset = type_5_serialize(type_var_18, buffer, offset);
+                        var offset = type_6_serialize(type_var_18, buffer, offset);
                     }
                     break;
                 }
@@ -326,7 +329,7 @@ function type_6_serialize(input, buffer, offset) {
     }
     return offset;
 }
-function type_6_deserialize(buffer, offset) {
+function type_7_deserialize(buffer, offset) {
     {
         {
             var [type_var_12, offset] = type_1_deserialize(buffer, offset);
@@ -361,7 +364,7 @@ function type_6_deserialize(buffer, offset) {
                 }
                 case 2: {
                     {
-                        var [type_var_18, offset] = type_5_deserialize(buffer, offset);
+                        var [type_var_18, offset] = type_6_deserialize(buffer, offset);
                     }
                     var type_var_19 = { tag: "spawn_entity", data: type_var_18 };
                     break;
@@ -376,7 +379,8 @@ var exports = {
 "::u8": {"size_of": type_1_size_of, "serialize": type_1_serialize, "deserialize": type_1_deserialize },
 "::u64": {"size_of": type_2_size_of, "serialize": type_2_serialize, "deserialize": type_2_deserialize },
 "::f64": {"size_of": type_3_size_of, "serialize": type_3_serialize, "deserialize": type_3_deserialize },
-"::position": {"size_of": type_4_size_of, "serialize": type_4_serialize, "deserialize": type_4_deserialize },
-"::entity_data": {"size_of": type_5_size_of, "serialize": type_5_serialize, "deserialize": type_5_deserialize },
-"::packet": {"size_of": type_6_size_of, "serialize": type_6_serialize, "deserialize": type_6_deserialize }
+"::sized_string": {"size_of": type_4_size_of, "serialize": type_4_serialize, "deserialize": type_4_deserialize },
+"::position": {"size_of": type_5_size_of, "serialize": type_5_serialize, "deserialize": type_5_deserialize },
+"::entity_data": {"size_of": type_6_size_of, "serialize": type_6_serialize, "deserialize": type_6_deserialize },
+"::packet": {"size_of": type_7_size_of, "serialize": type_7_serialize, "deserialize": type_7_deserialize }
 };
