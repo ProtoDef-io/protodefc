@@ -138,13 +138,13 @@ impl ValuesToIr for SimpleScalarVariant {
 impl ValuesToIr for UnionVariant {
     fn values_to_ir(items: &[Value]) -> Result<TypeContainer> {
         let union_item = items[0].item().unwrap();
-        union_item.validate(1, &["ref"], &["ref"])?;
+        union_item.validate(1, &["tag"], &["tag"])?;
 
         let union_name = union_item
             .arg(0).unwrap()
             .string().ok_or("union name must be a string")?;
         let tag_ref = union_item
-            .tagged_arg("ref").unwrap()
+            .tagged_arg("tag").unwrap()
             .reference()?;
 
         let mut builder = UnionVariantBuilder::new(union_name.into(), tag_ref);

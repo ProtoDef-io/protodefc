@@ -77,11 +77,8 @@ pub struct OptionSpec {
 
 #[derive(Debug)]
 pub enum IntegerSize {
-    B8,
-    B16,
-    B32,
-    B64,
-    Big,
+    AtLeast(usize),
+    IndexSize,
 }
 #[derive(Debug)]
 pub enum Signedness {
@@ -96,8 +93,8 @@ pub struct IntegerSpec {
 
 #[derive(Debug)]
 pub enum FloatSize {
-    Float,
-    Double,
+    F32,
+    F64,
 }
 #[derive(Debug)]
 pub struct FloatSpec {
@@ -107,7 +104,6 @@ pub struct FloatSpec {
 #[derive(Debug)]
 pub enum BinaryEncoding {
     Raw,
-    Ascii,
     Utf8,
 }
 #[derive(Debug)]

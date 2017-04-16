@@ -1,13 +1,9 @@
-@type "integer"
+@type integer("u8")
 def_native("u8");
 
-@type "integer"
+@type integer("u64")
 def_native("u64");
 
-@native native {
-    property("trunc") => integer(size: "64", signed: "true");
-}
-@type "none"
 def_native("f64");
 
 def("position") => container {
@@ -19,16 +15,16 @@ def("position") => container {
 def("entity_data") => container {
     field("entity_id") => ::u64;
     field("position") => ::position;
-    virtual_field("entity_type_tag", ref: "entity_type", prop: "tag") => ::u8;
-    field("entity_type") => union("entity_type", ref: "../entity_type_tag") {
+    virtual_field("entity_type_tag", value: "entity_type/@tag") => ::u8;
+    field("entity_type") => union("entity_type", tag: "../entity_type_tag") {
         variant("player", match: "0") => container {};
         variant("zombie", match: "1") => container {};
     };
 };
 
 def("packet") => container(virtual: "true") {
-    virtual_field("tag", ref: "data", prop: "tag") => ::u8;
-    field("data") => union("packet_variant", ref: "../tag") {
+    virtual_field("tag", value: "data/@tag") => ::u8;
+    field("data") => union("packet_variant", tag: "../tag") {
         variant("handshake", match: "0") => container {
             field("nonce") => ::u64;
         };

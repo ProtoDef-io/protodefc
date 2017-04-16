@@ -100,7 +100,7 @@ def_native("u8");
 
 def("test") => container(virtual: "true") {
     virtual_field("tag", value: "data/@tag") => u8;
-    field("data") => union("test_union", ref: "../tag") {
+    field("data") => union("test_union", tag: "../tag") {
         variant("zero", match: "0") => u8;
         variant("one", match: "1") => container {
             field("woo") => u8;

@@ -17,7 +17,7 @@ namespace("test_ns") {
 
     def("ns_test_5") => container {
         field("tag") => ::root_test_1;
-        field("data") => union("test_union", ref: "../tag") {
+        field("data") => union("test_union", tag: "../tag") {
             variant("zero", match: "0") => ::root_test_1;
             variant("one", match: "1") => container {
                 field("woo") => ::root_test_1;

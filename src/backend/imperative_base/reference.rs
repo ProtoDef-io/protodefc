@@ -42,7 +42,6 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                                   reference_handle: SpecReferenceHandle,
                                   output_var: Var, _is_read: bool) -> Block {
     let reference = data.get_reference_data(reference_handle);
-    println!("Reference: {:?}", reference);
 
     let ref_root_rc = data.get_reference_root(reference_handle).upgrade();
     let ref_root = ref_root_rc.borrow();
@@ -78,10 +77,6 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
             (_, &ReferencePathEntryData { operation: ReferencePathEntryOperation::NodeProperty(ref name), ref node, ref type_spec, .. }) => {
                 let next_res = var_for(&format!("int_val_{}", res_num), data);
                 res_num += 1;
-
-                println!("property {}", name);
-
-                // TODO
 
                 match name.as_ref() {
                     "length" => {
