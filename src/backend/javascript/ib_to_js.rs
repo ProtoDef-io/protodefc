@@ -167,17 +167,6 @@ fn call_for(typ: &ib::CallType, type_id: u64, input: &str, arguments: &[ib::Var]
     }
 }
 
-fn assign_target_for(typ: &ib::CallType) -> String {
-    match *typ {
-        ib::CallType::SizeOf(ref output) =>
-            format!("{}", output),
-        ib::CallType::Serialize =>
-            format!("offset"),
-        ib::CallType::Deserialize(ref output) =>
-            format!("[{}, offset]", output),
-    }
-}
-
 fn build_expr(expr: &ib::Expr) -> Result<Expr> {
     let res = match *expr {
         ib::Expr::InputData => format!("input").into(),
