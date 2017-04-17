@@ -26,6 +26,7 @@ pub struct ResultBlock {
 pub enum Operation {
     // Special
     Block(Block),
+    ThrowError,
 
     // Assignment
     Assign {
@@ -58,9 +59,11 @@ pub enum Operation {
 pub enum ControlFlowVariant {
     MatchUnionTag {
         cases: Vec<UnionTagCase>,
+        default: (Option<Var>, Block),
     },
     MatchLiteral {
         cases: Vec<LiteralCase>,
+        default: Block,
     },
     ForEachArray {
         loop_index_var: Var,

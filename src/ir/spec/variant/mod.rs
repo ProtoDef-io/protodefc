@@ -28,12 +28,6 @@ pub use self::container::{ContainerVariant, ContainerField, ContainerVariantBuil
 mod array;
 pub use self::array::ArrayVariant;
 
-mod sized_buffer;
-pub use self::sized_buffer::SizedBufferVariant;
-
-mod terminated_buffer;
-pub use self::terminated_buffer::TerminatedBufferVariant;
-
 mod simple_scalar;
 pub use self::simple_scalar::SimpleScalarVariant;
 
@@ -43,10 +37,6 @@ pub enum Variant {
     Container(ContainerVariant),
     Array(ArrayVariant),
     Union(UnionVariant),
-
-    // Strings/Data buffers
-    SizedBuffer(SizedBufferVariant),
-    TerminatedBuffer(TerminatedBufferVariant),
 
     // Simple
     SimpleScalar(SimpleScalarVariant),
@@ -58,8 +48,6 @@ impl Variant {
             Variant::Container(ref inner) => inner,
             Variant::Array(ref inner) => inner,
             Variant::Union(ref inner) => inner,
-            Variant::SizedBuffer(ref inner) => inner,
-            Variant::TerminatedBuffer(ref inner) => inner,
             Variant::SimpleScalar(ref inner) => inner,
         }
     }
@@ -69,8 +57,6 @@ impl Variant {
             Variant::Container(ref mut inner) => inner,
             Variant::Array(ref mut inner) => inner,
             Variant::Union(ref mut inner) => inner,
-            Variant::SizedBuffer(ref mut inner) => inner,
-            Variant::TerminatedBuffer(ref mut inner) => inner,
             Variant::SimpleScalar(ref mut inner) => inner,
         }
     }
@@ -80,8 +66,6 @@ impl Variant {
             Variant::Container(_) => VariantType::Container,
             Variant::Array(_) => VariantType::Array,
             Variant::Union(_) => VariantType::Union,
-            Variant::SizedBuffer(_) => VariantType::SizedBuffer,
-            Variant::TerminatedBuffer(_) => VariantType::TerminatedBuffer,
             Variant::SimpleScalar(_) =>
                 VariantType::SimpleScalar(data.name.clone()),
         }
@@ -94,7 +78,5 @@ pub enum VariantType {
     Container,
     Array,
     Union,
-    SizedBuffer,
-    TerminatedBuffer,
     SimpleScalar(TypePath),
 }

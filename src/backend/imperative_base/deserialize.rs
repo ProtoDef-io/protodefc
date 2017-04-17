@@ -145,7 +145,7 @@ impl BaseDeserialize for UnionVariant {
                             union_name: self.union_name.clone(),
                             union_tag: case.case_name.clone(),
                             variant_inner_var: output_for_type(&child_rc).into(),
-                        }
+                        },
                     });
 
                     LiteralCase {
@@ -156,10 +156,27 @@ impl BaseDeserialize for UnionVariant {
             })
             .collect();
 
+        let mut default_ops = Vec::new();
+        if let Some(ref case) = self.default_case {
+            let child_rc = case.child.upgrade();
+            default_ops.push(Operation::Block(generate_deserialize(child_rc.clone())?));
+            default_ops.push(Operation::Construct {
+                output_var: out_var.clone().into(),
+                variant: ConstructVariant::Union {
+                    union_name: self.union_name.clone(),
+                    union_tag: case.case_name.clone(),
+                    variant_inner_var: output_for_type(&child_rc).into(),
+                },
+            });
+        } else {
+            default_ops.push(Operation::ThrowError);
+        }
+
         ops.push(Operation::ControlFlow {
             input_var: tag_var.into(),
             variant: ControlFlowVariant::MatchLiteral {
                 cases: cases?,
+                default: Block(default_ops),
             },
         });
 

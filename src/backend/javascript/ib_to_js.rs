@@ -8,6 +8,8 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
 
     for operation in &block.0 {
         match *operation {
+            ib::Operation::ThrowError =>
+                b.expr(format!("throw \"error\"").into()),
             ib::Operation::Assign { ref output_var, ref value } =>
                 b.var_assign(output_var.string(), build_expr(value)?.into()),
             ib::Operation::AddCount(ref var) =>
@@ -40,8 +42,8 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
             },
             ib::Operation::ControlFlow { ref input_var,
                                          variant: ib::ControlFlowVariant::MatchUnionTag {
-                                             ref cases } } => {
-                let cases: Result<Vec<(Expr, Block)>> = cases.iter()
+                                             ref cases, ref default } } => {
+                let mut cases: Vec<(Expr, Block)> = cases.iter()
                     .map(|&ib::UnionTagCase { ref variant_name, ref block,
                                               ref variant_var }| {
                         build_block(block).map(|ib| {
@@ -57,17 +59,30 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
 
                             (format!("case \"{}\"", variant_name).into(), iib)
                         })
-                    }).collect();
+                    }).collect::<Result<_>>()?;
+
+                let mut default_block = Block::new();
+                if let Some(ref variant_var_inner) = default.0 {
+                    default_block.var_assign(
+                        variant_var_inner.string(),
+                        format!("{}.data", input_var).into()
+                    );
+                }
+                default_block.block(build_block(&default.1)?);
+                cases.push((
+                    format!("default").into(),
+                    default_block,
+                ));
 
                 b.switch(
                     format!("{}.tag", input_var).into(),
-                    cases?
+                    cases
                 );
             },
             ib::Operation::ControlFlow { ref input_var,
                                          variant: ib::ControlFlowVariant::MatchLiteral {
-                                             ref cases } } => {
-                let cases: Result<Vec<(Expr, Block)>> = cases.iter()
+                                             ref cases, ref default } } => {
+                let mut cases: Vec<(Expr, Block)> = cases.iter()
                     .map(|&ib::LiteralCase { ref value, ref block }| {
                         build_block(block).map(|ib| {
                             (
@@ -77,11 +92,16 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                             )
                         })
                     })
-                    .collect();
+                    .collect::<Result<_>>()?;
+
+                cases.push((
+                    format!("default").into(),
+                    build_block(default)?,
+                ));
 
                 b.switch(
                     format!("{}", input_var).into(),
-                    cases?
+                    cases
                 );
             }
             ib::Operation::Construct { ref output_var,

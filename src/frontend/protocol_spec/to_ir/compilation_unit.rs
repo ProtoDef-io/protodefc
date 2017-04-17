@@ -43,7 +43,8 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
                     .string()
                     .ok_or("argument to def must be string")?;
 
-                let typ = spec::type_def_to_ir(stmt)?;
+                let typ = spec::type_def_to_ir(stmt)
+                    .chain_err(|| format!("inside def(\"{}\")", name))?;
 
                 ns.add_type(NamedType {
                     path: TypePath {
@@ -98,7 +99,8 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
                 }
 
                 path.push(name.to_owned());
-                block_to_compilation_unit_ns(&head_item.block, cu, gen, path)?;
+                block_to_compilation_unit_ns(&head_item.block, cu, gen, path)
+                    .chain_err(|| format!("inside namespace '{}'", name))?;
                 path.pop();
             }
             name => bail!("'{}' item not allowed in root", name),

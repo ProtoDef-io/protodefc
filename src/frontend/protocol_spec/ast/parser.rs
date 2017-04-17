@@ -6,8 +6,9 @@ use ::errors::*;
 pub fn parse(input: &str) -> Result<Block> {
     match root(input) {
         IResult::Done(_, out) => Ok(out),
-        IResult::Error(err) =>
-            bail!(CompilerError::NomParseError(nom_error_to_pos(&err, input.len()))),
+        IResult::Error(err) => {
+            bail!(CompilerError::NomParseError(nom_error_to_pos(&err, input.len())));
+        }
         IResult::Incomplete(_) => unreachable!(),
     }
 }
@@ -21,26 +22,29 @@ pub fn parse_ident(input: &str) -> Result<Ident> {
     }
 }
 
-named!(root<&str, Block>, do_parse!(
-    block: block_inner >>
+named!(root<&str, Block>,
+       map!(many_till!(call!(terminated_statement), call!(eof)),
+            |res: (Vec<Statement>, &str)| Block { statements: res.0 }));
+
+named!(terminated_statement<&str, Statement>, do_parse!(
+    i: terminated!(complete!(statement), terminator) >>
         space >>
-        eof!() >>
-        (block)
+        (i)
 ));
 
-named!(block_inner<&str, Block>, do_parse!(
-    s: many0!(terminated!(complete!(statement), terminator)) >>
-        (Block {
-            statements: s,
-        })
-));
+//named!(block_inner<&str, Block>, do_parse!(
+//    s: complete!(many0!(terminated!(complete!(statement), terminator))) >>
+//        (Block {
+//            statements: s,
+//        })
+//));
 
 named!(statement_items<&str, Vec<Value>>,
        separated_nonempty_list!(contains_arrow, value));
 
 named!(statement<&str, Statement>, do_parse!(
     attributes: many0!(complete!(attribute)) >>
-        items: statement_items >>
+        items: complete!(statement_items) >>
         (Statement {
             items: items,
             attributes: attributes.iter().cloned().collect(),
@@ -56,7 +60,11 @@ named!(attribute<&str, (String, Vec<Value>)>, do_parse!(
         (ident.into(), value)
 ));
 
-named!(statement_item<&str, Value>, do_parse!(
+named!(statements_until_block_close<&str, Vec<Statement>>,
+       map!(many_till!(call!(terminated_statement), tag_s!("}")),
+            |i: (Vec<Statement>, &str)| i.0));
+
+named!(statement_item<&str, Item>, do_parse!(
     // Identifier
     space >>
         ident: identifier >>
@@ -74,15 +82,17 @@ named!(statement_item<&str, Value>, do_parse!(
         // Optional block
         space >>
         has_block: opt!(tag_s!("{")) >>
-        block: cond!(has_block.is_some(), block_inner) >>
+        block: cond!(has_block.is_some(), statements_until_block_close) >>
         space >>
         cond!(has_block.is_some(), tag_s!("}")) >>
 
-        (Value::Item(Item {
+        (Item {
             name: ident,
             args: args.unwrap_or_else(|| vec![]),
-            block: block.unwrap_or_else(|| Block { statements: vec![], }),
-        }))
+            block: block
+                .map(|i| Block { statements: i })
+                .unwrap_or_else(|| Block { statements: vec![], }),
+        })
 ));
 
 named!(statement_item_arg<&str, ItemArg>, do_parse!(
@@ -100,7 +110,7 @@ named!(statement_item_arg<&str, ItemArg>, do_parse!(
 named!(value<&str, Value>, alt!(
     string => { |s: &str| Value::String { string: s.into(), is_block: false, } }
     | block_string => { |s: &str| Value::String { string: s.into(), is_block: true } }
-    | statement_item => { |i| i }
+    | statement_item => { |i| Value::Item(i) }
 ));
 
 named!(block_string<&str, &str>, do_parse!(
@@ -127,6 +137,7 @@ named!(terminator<&str, ()>, do_parse!(space >> tag_s!(";") >> ()));
 named!(separator<&str, ()>, do_parse!(space >> tag_s!(",") >> ()));
 named!(space<&str, &str>, take_while!(is_space));
 named!(colon<&str, ()>, do_parse!(tag_s!(":") >> ()));
+named!(eof<&str, &str>, eof!());
 
 fn is_ident_char(c: char) -> bool {
     let cu = c as u8;

@@ -158,6 +158,18 @@ impl ValuesToIr for UnionVariant {
 
                     builder.case(variant_match.into(), variant_name.into(), field_type);
                 }
+                Some("default") => {
+                    block_item.validate(1, &[], &[])?;
+
+                    let variant_name = block_item.arg(0)
+                        .unwrap()
+                        .string()
+                        .ok_or("variant name arg must be string")?;
+
+                    let field_type = type_values_to_ir(&stmt.items[1..])?;
+
+                    builder.default(variant_name.into(), field_type)?;
+                }
                 _ => bail!("union block can only contain 'variant'"),
             }
         }

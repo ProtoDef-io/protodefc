@@ -83,13 +83,6 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                 res_num += 1;
 
                 match name.as_ref() {
-                    //"length" => {
-                    //    ops.push(Operation::MapValue {
-                    //        input: prev_res.into(),
-                    //        output: next_res.clone().into(),
-                    //        operation: MapOperation::ArrayLength,
-                    //    });
-                    //}
                     "tag" => {
                         let node_rc = node.clone().unwrap().upgrade();
                         let node_inner = node_rc.borrow();
@@ -109,10 +102,13 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                                         block: block,
                                     }
                                 }).collect();
+
                                 ops.push(Operation::ControlFlow {
                                     input_var: prev_res.into(),
                                     variant: ControlFlowVariant::MatchUnionTag {
                                         cases: cases,
+                                        // TODO: This should be a compile-time error
+                                        default: (None, Operation::ThrowError.into()),
                                     },
                                 });
                             }

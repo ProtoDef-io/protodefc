@@ -122,10 +122,22 @@ impl BaseSizeOf for UnionVariant {
             })
         }).collect();
 
+        let mut default_ops = Vec::new();
+        let default_var;
+        if let Some(ref case) = self.default_case {
+            let child_rc = case.child.upgrade();
+            default_var = Some(input_for_type(&child_rc).into());
+            default_ops.push(Operation::Block(generate_size_of(child_rc.clone())?));
+        } else {
+            default_var = None;
+            default_ops.push(Operation::ThrowError);
+        }
+
         ops.push(Operation::ControlFlow {
             input_var: input_for(data).into(),
             variant: ControlFlowVariant::MatchUnionTag {
                 cases: cases?,
+                default: (default_var, Block(default_ops)),
             },
         });
 

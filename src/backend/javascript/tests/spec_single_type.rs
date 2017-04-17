@@ -123,6 +123,36 @@ def("test") => container(virtual: "true") {
 }
 
 #[test]
+fn union_default() {
+    let spec = r#"
+@type integer("u8")
+def_native("u8");
+
+def("test") => container {
+    field("tag") => u8;
+    field("data") => union("test_union", tag: "../tag") {
+        variant("zero", match: "0") => u8;
+        default("default") => container {
+            field("woo") => u8;
+            field("hoo") => u8;
+        };
+    };
+};
+"#;
+
+    test_single(
+        spec,
+        "{tag: 0, data: {tag: \"zero\", data: 8}}",
+        &[0, 8]
+    );
+    test_single(
+        spec,
+        "{tag: 8, data: {tag: \"default\", data: {woo: 2, hoo: 5}}}",
+        &[8, 2, 5]
+    );
+}
+
+#[test]
 fn native_type_argument() {
     let spec = r#"
 @type binary("utf8")

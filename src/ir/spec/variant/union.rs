@@ -15,6 +15,7 @@ pub struct UnionVariant {
     pub match_target_handle: SpecReferenceHandle,
 
     pub cases: Vec<UnionCase>,
+    pub default_case: Option<UnionCase>,
 
     pub tag_property_type: Option<WeakTypeSpecContainer>,
 }
@@ -88,6 +89,7 @@ impl UnionVariantBuilder {
                     match_target_handle: match_target_handle,
 
                     cases: Vec::new(),
+                    default_case: None,
 
                     tag_property_type: None,
                 })
@@ -109,6 +111,24 @@ impl UnionVariantBuilder {
             }
             _ => unreachable!(),
         }
+    }
+
+    pub fn default(&mut self, case_name: String, child: TypeContainer) -> Result<()> {
+        match self.typ.variant {
+            Variant::Union(ref mut variant) => {
+                ensure!(variant.default_case.is_none(),
+                        "duplicate default variant");
+                let case_handle = self.typ.data.add_child(child.clone());
+                variant.default_case = Some(UnionCase {
+                    match_val_str: "".to_owned(), // TODO
+                    case_name: case_name,
+                    child: child.downgrade(),
+                    child_handle: case_handle,
+                });
+            }
+            _ => unreachable!(),
+        }
+        Ok(())
     }
 
     pub fn build(self) -> ::std::result::Result<TypeContainer, String> {

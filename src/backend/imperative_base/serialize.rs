@@ -116,10 +116,23 @@ impl BaseSerialize for UnionVariant {
             })
         }).collect();
 
+        let mut default_ops = Vec::new();
+        let variant_var;
+        if let Some(ref case) = self.default_case {
+            let child_rc = case.child.upgrade();
+            let inner = generate_serialize(child_rc.clone())?;
+            variant_var = Some(input_for_type(&child_rc).into());
+            default_ops.push(Operation::Block(inner));
+        } else {
+            variant_var = None;
+            default_ops.push(Operation::ThrowError);
+        }
+
         ops.push(Operation::ControlFlow {
             input_var: input_for(data).into(),
             variant: ControlFlowVariant::MatchUnionTag {
                 cases: cases?,
+                default: (variant_var, Block(default_ops)),
             },
         });
 
