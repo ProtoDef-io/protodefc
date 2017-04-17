@@ -44,11 +44,12 @@ pub enum Operation {
         variant: ConstructVariant,
     },
     TypeCall {
-        typ: CallType,
+        input_var: Var,
+
+        call_type: CallType,
         named_type: NamedTypeContainer,
         type_name: TypePath,
-
-        input_var: Var,
+        arguments: Vec<Var>,
     },
 
 }

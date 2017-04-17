@@ -122,6 +122,30 @@ def("test") => container(virtual: "true") {
     );
 }
 
+#[test]
+fn native_type_argument() {
+    let spec = r#"
+@type binary("utf8")
+def_native("sized_string") {
+    argument("size", stage: "read") => integer("usize");
+};
+
+@type integer("u8")
+def_native("u8");
+
+def("test") => container(virtual: "true") {
+    virtual_field("size", value: "string/@size") => u8;
+    field("string") => sized_string(size: "../size");
+};
+"#;
+
+    test_single(
+        spec,
+        "\"foo\"",
+        &[3, b'f', b'o', b'o']
+    );
+}
+
 //#[test]
 //fn protodef_spec_tests() {
 //    for case in ::test_harness::json_spec_cases() {

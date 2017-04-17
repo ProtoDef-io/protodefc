@@ -27,7 +27,7 @@ pub struct SpecChildHandle(usize);
 #[derive(Debug, Copy, Clone)]
 pub struct SpecReferenceHandle(usize);
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ReferenceAccessTime {
     Read,
     ReadWrite,

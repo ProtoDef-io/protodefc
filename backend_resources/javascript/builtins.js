@@ -89,4 +89,13 @@
             return cursor + 1;
         },
     },
+    "::sized_string": {
+        size_of: function(input) { return Buffer.byteLength(input, 'utf8'); },
+        serialize: function(input, buffer, offset) {
+            return offset + buffer.write(input, offset);
+        },
+        deserialize: function(buffer, offset, size) {
+            return [buffer.toString('utf8', offset, offset+size), offset+size];
+        },
+    },
 }

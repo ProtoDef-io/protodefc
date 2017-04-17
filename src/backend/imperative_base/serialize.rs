@@ -2,9 +2,11 @@ use ::errors::*;
 use ::ir::spec::{TypeVariant, TypeData, TypeContainer};
 use ::ir::spec::variant::{SimpleScalarVariant, ContainerVariant, ArrayVariant,
                           UnionVariant, ContainerFieldType};
+use ::ir::spec::data::ReferenceAccessTime;
 use super::*;
 use super::utils::*;
 use super::container_utils::*;
+use super::reference::build_reference_accessor;
 
 pub fn generate_serialize(typ: TypeContainer) -> Result<Block> {
     let typ_inner = typ.borrow();
@@ -18,14 +20,31 @@ pub trait BaseSerialize: TypeVariant {
 
 impl BaseSerialize for SimpleScalarVariant {
     fn serialize(&self, data: &TypeData) -> Result<Block> {
-        Ok(Block(vec![
-            Operation::TypeCall {
-                input_var: input_for(data).into(),
-                typ: CallType::Serialize,
-                type_name: data.name.clone().into(),
-                named_type: self.target.clone().unwrap(),
-            },
-        ]))
+        println!("{:?}", self.arguments);
+
+        let mut ops: Vec<Operation> = Vec::new();
+
+        let arguments = self.arguments.iter()
+            .filter(|arg| data.get_reference_data(arg.handle.unwrap()).access_time == ReferenceAccessTime::ReadWrite)
+            .enumerate()
+            .map(|(idx, arg)| {
+                let arg_var = format!("arg_{}", idx);
+                let accessor_block = build_reference_accessor(self, data, arg.handle.unwrap(),
+                                                              arg_var.clone().into(), false);
+                ops.push(Operation::Block(accessor_block));
+                arg_var.into()
+            })
+            .collect();
+
+        ops.push(Operation::TypeCall {
+            input_var: input_for(data).into(),
+            call_type: CallType::Serialize,
+            type_name: data.name.clone().into(),
+            named_type: self.target.clone().unwrap(),
+            arguments: arguments,
+        });
+
+        Ok(Block(ops))
     }
 }
 

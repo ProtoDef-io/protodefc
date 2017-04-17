@@ -120,11 +120,12 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                 );
             }
             ib::Operation::TypeCall { ref input_var, ref type_name,
-                                      ref typ, ref named_type } => {
+                                      ref call_type, ref named_type,
+                                      ref arguments } => {
                 let named_type_inner = named_type.borrow();
 
-                let call = call_for(typ, named_type_inner.type_id, input_var.str());
-                let assign_var = assign_target_for(typ);
+                let call = call_for(call_type, named_type_inner.type_id, input_var.str(), arguments);
+                let assign_var = assign_target_for(call_type);
 
                 b.var_assign(assign_var, call.into());
             }
@@ -134,17 +135,23 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
     Ok(b)
 }
 
-fn call_for(typ: &ib::CallType, type_id: u64, input: &str) -> String {
+fn call_for(typ: &ib::CallType, type_id: u64, input: &str, arguments: &[ib::Var]) -> String {
+    let arguments_str = if arguments.len() > 0 {
+        format!(", {}", arguments.iter().join(", "))
+    } else {
+        format!("")
+    };
+
     match *typ {
         ib::CallType::SizeOf(_) =>
-            format!("type_{}_size_of({})",
-                    type_id, input),
+            format!("type_{}_size_of({}{})",
+                    type_id, input, arguments_str),
         ib::CallType::Serialize =>
-            format!("type_{}_serialize({}, buffer, offset)",
-                    type_id, input),
+            format!("type_{}_serialize({}, buffer, offset{})",
+                    type_id, input, arguments_str),
         ib::CallType::Deserialize(_) =>
-            format!("type_{}_deserialize({}, offset)",
-                    type_id, input),
+            format!("type_{}_deserialize({}, offset{})",
+                    type_id, input, arguments_str),
     }
 }
 
@@ -170,7 +177,7 @@ fn build_expr(expr: &ib::Expr) -> Result<Expr> {
         ib::Expr::ArrayLength(ref array) =>
             format!("{}.length", array),
         ib::Expr::BinarySize(ref binary, _) =>
-            format!("Binary.byteLength({}, 'utf8')", binary),
+            format!("Buffer.byteLength({}, 'utf8')", binary),
     };
     Ok(res.into())
 }

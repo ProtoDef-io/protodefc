@@ -1,9 +1,11 @@
 use ::errors::*;
 use ::ir::spec::{TypeVariant, TypeData, TypeContainer};
 use ::ir::spec::variant::*;
+use ::ir::spec::data::ReferenceAccessTime;
 use super::*;
 use super::utils::*;
 use super::container_utils::*;
+use super::reference::build_reference_accessor;
 
 pub fn generate_size_of(typ: TypeContainer) -> Result<Block> {
     let typ_inner = typ.borrow();
@@ -20,11 +22,24 @@ impl BaseSizeOf for SimpleScalarVariant {
     fn size_of(&self, data: &TypeData) -> Result<Block> {
         let mut ops: Vec<Operation> = Vec::new();
 
+        let arguments = self.arguments.iter()
+            .filter(|arg| data.get_reference_data(arg.handle.unwrap()).access_time == ReferenceAccessTime::ReadWrite)
+            .enumerate()
+            .map(|(idx, arg)| {
+                let arg_var = format!("arg_{}", idx);
+                let accessor_block = build_reference_accessor(self, data, arg.handle.unwrap(),
+                                                              arg_var.clone().into(), false);
+                ops.push(Operation::Block(accessor_block));
+                arg_var.into()
+            })
+            .collect();
+
         ops.push(Operation::TypeCall {
             input_var: input_for(data).into(),
-            typ: CallType::SizeOf("size".to_owned().into()),
+            call_type: CallType::SizeOf("size".to_owned().into()),
             type_name: data.name.clone(),
             named_type: self.target.clone().unwrap(),
+            arguments: arguments,
         });
 
         ops.push(Operation::AddCount("size".to_owned().into()));
