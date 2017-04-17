@@ -124,10 +124,22 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                                       ref arguments } => {
                 let named_type_inner = named_type.borrow();
 
-                let call = call_for(call_type, named_type_inner.type_id, input_var.str(), arguments);
-                let assign_var = assign_target_for(call_type);
+                let call = call_for(call_type, named_type_inner.type_id,
+                                    input_var.str(), arguments);
 
-                b.var_assign(assign_var, call.into());
+                match *call_type {
+                    ib::CallType::SizeOf(ref output) => {
+                        b.var_assign(format!("{}", output), call.into());
+                    }
+                    ib::CallType::Serialize => {
+                        b.var_assign(format!("offset"), call.into());
+                    }
+                    ib::CallType::Deserialize(ref output) => {
+                        b.var_assign(format!("call_out"), call.into());
+                        b.var_assign(format!("{}", output), format!("call_out[0]").into());
+                        b.var_assign(format!("offset"), format!("call_out[1]").into())
+                    }
+                }
             }
         }
     }
