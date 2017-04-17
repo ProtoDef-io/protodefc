@@ -5,7 +5,7 @@ use ::ir::spec::data::{SpecReferenceHandle, ReferencePathEntryData,
                        ReferencePathEntryOperation};
 use ::ir::type_spec::{TypeSpecVariant, EnumSpec};
 use ::ir::type_spec::property::TypeSpecPropertyVariant;
-use super::{Var, Block, Operation, Expr, MapOperation, Literal, UnionTagCase};
+use super::*;
 use super::utils::*;
 
 pub fn build_reference_accessor(variant: &TypeVariant, data: &TypeData,
@@ -66,9 +66,9 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                 res_num += 1;
 
                 ops.push(Operation::Assign {
-                    name: next_res.clone().into(),
+                    output_var: next_res.clone().into(),
                     value: Expr::ContainerField {
-                        value: Box::new(Expr::Var(prev_res.into())),
+                        input_var: prev_res.into(),
                         field: name.clone(),
                     },
                 });
@@ -97,13 +97,11 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                         match node_inner.variant {
                             Variant::Union(ref union) => {
                                 let cases = union.cases.iter().map(|case| {
-                                    let block = Block(vec![
-                                        Operation::Assign {
-                                            name: next_res.to_owned().into(),
-                                            value: Expr::Literal(Literal::Number(
-                                                case.match_val_str.clone()))
-                                        }
-                                    ]);
+                                    let block: Block = Operation::Assign {
+                                        output_var: next_res.to_owned().into(),
+                                        value: Expr::Literal(Literal::Number(
+                                            case.match_val_str.clone()))
+                                    }.into();
 
                                     UnionTagCase {
                                         variant_name: case.case_name.clone(),
@@ -111,10 +109,11 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                                         block: block,
                                     }
                                 }).collect();
-                                ops.push(Operation::MapValue {
-                                    input: prev_res.into(),
-                                    output: next_res.clone().into(),
-                                    operation: MapOperation::UnionTagToExpr(cases),
+                                ops.push(Operation::ControlFlow {
+                                    input_var: prev_res.into(),
+                                    variant: ControlFlowVariant::MatchUnionTag {
+                                        cases: cases,
+                                    },
                                 });
                             }
                             // TODO: This NEEDS to be validated earlier.
@@ -136,18 +135,16 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
 
                 match property.variant {
                     TypeSpecPropertyVariant::ArrayLength => {
-                        ops.push(Operation::MapValue {
-                            input: prev_res.into(),
-                            output: next_res.clone().into(),
-                            operation: MapOperation::ArrayLength,
+                        ops.push(Operation::Assign {
+                            output_var: next_res.clone().into(),
+                            value: Expr::ArrayLength(prev_res.into()),
                         });
                     }
                     TypeSpecPropertyVariant::BinarySize(ref encoding) => {
-                        ops.push(Operation::MapValue {
-                            input: prev_res.into(),
-                            output: next_res.clone().into(),
-                            operation: MapOperation::BinarySize(encoding.clone()),
-                        })
+                        ops.push(Operation::Assign {
+                            output_var: next_res.clone().into(),
+                            value: Expr::BinarySize(prev_res.into(), encoding.clone()),
+                        });
                     }
                 }
 
@@ -159,7 +156,7 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
     }
 
     ops.push(Operation::Assign {
-        name: output_var,
+        output_var: output_var,
         value: Expr::Var(prev_res.into()),
     });
 

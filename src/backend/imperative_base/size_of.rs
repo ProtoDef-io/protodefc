@@ -21,14 +21,13 @@ impl BaseSizeOf for SimpleScalarVariant {
         let mut ops: Vec<Operation> = Vec::new();
 
         ops.push(Operation::TypeCall {
-            input: input_for(data).into(),
-            output: "size".to_owned().into(),
-            typ: CallType::SizeOf,
+            input_var: input_for(data).into(),
+            typ: CallType::SizeOf("size".to_owned().into()),
             type_name: data.name.clone(),
             named_type: self.target.clone().unwrap(),
         });
 
-        ops.push(Operation::AddCount(Expr::Var("size".to_owned().into())));
+        ops.push(Operation::AddCount("size".to_owned().into()));
 
         Ok(Block(ops))
     }
@@ -72,11 +71,13 @@ impl BaseSizeOf for ArrayVariant {
 
         let child_input_var = input_for_type(&self.child.upgrade());
 
-        ops.push(Operation::ForEachArray {
-            array: input_for(data).into(),
-            index: index_var.clone().into(),
-            typ: child_input_var.clone().into(),
-            block: generate_size_of(self.child.upgrade())?,
+        ops.push(Operation::ControlFlow {
+            input_var: input_for(data).into(),
+            variant: ControlFlowVariant::ForEachArray {
+                loop_index_var: index_var.clone().into(),
+                loop_value_var: child_input_var.clone().into(),
+                inner: generate_size_of(self.child.upgrade())?,
+            },
         });
 
         Ok(Block(ops))
@@ -106,10 +107,11 @@ impl BaseSizeOf for UnionVariant {
             })
         }).collect();
 
-        ops.push(Operation::MapValue {
-            input: input_for(data).into(),
-            output: "".to_owned().into(),
-            operation: MapOperation::UnionTagToExpr(cases?),
+        ops.push(Operation::ControlFlow {
+            input_var: input_for(data).into(),
+            variant: ControlFlowVariant::MatchUnionTag {
+                cases: cases?,
+            },
         });
 
         Ok(Block(ops))

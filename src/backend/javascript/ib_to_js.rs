@@ -8,27 +8,29 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
 
     for operation in &block.0 {
         match *operation {
-            ib::Operation::Assign { ref name, ref value } =>
-                b.var_assign(name.0.clone(), build_expr(value)?.into()),
-            ib::Operation::AddCount(ref expr) =>
+            ib::Operation::Assign { ref output_var, ref value } =>
+                b.var_assign(output_var.string(), build_expr(value)?.into()),
+            ib::Operation::AddCount(ref var) =>
                 b.assign("count".into(),
-                         format!("count + {}", build_expr(expr)?.0).into()),
-            ib::Operation::Block(ref block) => b.scope(build_block(block)?),
-            ib::Operation::ForEachArray { ref array, ref index,
-                                          ref typ, ref block } => {
-                let index_var = &index.0;
-                let length_var = format!("{}_length", index.0);
+                         format!("count + {}", var).into()),
+            ib::Operation::Block(ref inner_block) => b.scope(build_block(inner_block)?),
+            ib::Operation::ControlFlow { ref input_var,
+                                         variant: ib::ControlFlowVariant::ForEachArray {
+                                             ref loop_index_var, ref loop_value_var,
+                                             ref inner } } => {
+                let index_var = loop_index_var;
+                let length_var = format!("{}_length", index_var);
 
                 let mut ib = Block::new();
                 {
-                    let expr = format!("{}[{}]", array.0, index_var);
-                    ib.var_assign(typ.0.clone(), expr.into());
+                    let expr = format!("{}[{}]", input_var, index_var);
+                    ib.var_assign(loop_value_var.string(), expr.into());
 
-                    ib.scope(build_block(block)?);
+                    ib.scope(build_block(inner)?);
                 }
 
                 b.var_assign(length_var.clone(),
-                             format!("{}.length", array.0).into());
+                             format!("{}.length", input_var).into());
                 b.for_(
                     format!("var {} = 0", index_var).into(),
                     format!("{} < {}", index_var, length_var).into(),
@@ -36,26 +38,9 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                     ib
                 );
             },
-            ib::Operation::MapValue { ref input, ref output,
-                                      operation: ib::MapOperation::ArrayLength } => {
-                let input_var = &input.0;
-                let output_var = &output.0;
-
-                b.var_assign(output_var.clone(),
-                             format!("{}.length", input_var).into());
-            }
-            ib::Operation::MapValue { ref input, ref output,
-                                      operation: ib::MapOperation::BinarySize(_) } => {
-                let input_var = &input.0;
-                let output_var = &output.0;
-
-                b.var_assign(output_var.clone(),
-                             format!("Buffer.byteLength({}, 'utf8')", input_var).into());
-            }
-            ib::Operation::MapValue {
-                ref input, ref output,
-                operation: ib::MapOperation::UnionTagToExpr(ref cases) } => {
-
+            ib::Operation::ControlFlow { ref input_var,
+                                         variant: ib::ControlFlowVariant::MatchUnionTag {
+                                             ref cases } } => {
                 let cases: Result<Vec<(Expr, Block)>> = cases.iter()
                     .map(|&ib::UnionTagCase { ref variant_name, ref block,
                                               ref variant_var }| {
@@ -64,8 +49,8 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
 
                             if let &Some(ref variant_var_inner) = variant_var {
                                 iib.var_assign(
-                                    variant_var_inner.0.clone(),
-                                    format!("{}.data", input.0).into()
+                                    variant_var_inner.string(),
+                                    format!("{}.data", input_var).into()
                                 );
                             }
                             iib.block(ib);
@@ -75,14 +60,13 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                     }).collect();
 
                 b.switch(
-                    format!("{}.tag", input.0).into(),
+                    format!("{}.tag", input_var).into(),
                     cases?
                 );
             },
-            ib::Operation::MapValue {
-                ref input, ref output,
-                operation: ib::MapOperation::LiteralToExpr(ref cases) } => {
-
+            ib::Operation::ControlFlow { ref input_var,
+                                         variant: ib::ControlFlowVariant::MatchLiteral {
+                                             ref cases } } => {
                 let cases: Result<Vec<(Expr, Block)>> = cases.iter()
                     .map(|&ib::LiteralCase { ref value, ref block }| {
                         build_block(block).map(|ib| {
@@ -96,47 +80,51 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                     .collect();
 
                 b.switch(
-                    format!("{}", input.0).into(),
+                    format!("{}", input_var).into(),
                     cases?
                 );
             }
-            ib::Operation::ConstructContainer { ref output, ref fields } => {
+            ib::Operation::Construct { ref output_var,
+                                       variant: ib::ConstructVariant::Container {
+                                           ref fields } } => {
                 let obj_fields = fields.iter()
                     .map(|&(ref name, ref var)| format!("{}: {}", name, var.0))
                     .join(", ");
 
-                b.var_assign(output.0.clone(), format!("{{ {} }}", obj_fields).into());
+                b.var_assign(output_var.string(), format!("{{ {} }}", obj_fields).into());
             }
-            ib::Operation::ConstructArray { ref count, ref ident, ref item_var,
-                                            ref block, ref output } => {
-                let index_var = format!("array_{}_index", ident);
+            ib::Operation::Construct { ref output_var,
+                                       variant: ib::ConstructVariant::Array {
+                                           ref array_node_ident, ref count_input_var,
+                                           ref inner_result_var, ref inner } } => {
+                let index_var = format!("array_{}_index", array_node_ident);
 
                 let mut ib = Block::new();
-                ib.block(build_block(block)?);
-                ib.expr(format!("{}.push({})",
-                                output.0.clone(), item_var.0.clone()).into());
+                ib.block(build_block(inner)?);
+                ib.expr(format!("{}.push({})", output_var, inner_result_var).into());
 
-                b.var_assign(output.0.clone(), "[]".into());
+                b.var_assign(output_var.string(), "[]".into());
                 b.for_(
                     format!("var {} = 0", index_var).into(),
-                    format!("{} < {}", index_var, count.0).into(),
+                    format!("{} < {}", index_var, count_input_var).into(),
                     format!("{}++", index_var).into(),
                     ib
                 );
             }
-            ib::Operation::ConstructUnion { ref union_tag, ref output,
-                                            ref input, .. } => {
+            ib::Operation::Construct { ref output_var,
+                                       variant: ib::ConstructVariant::Union {
+                                           ref union_tag, ref variant_inner_var, .. } } => {
                 b.var_assign(
-                    output.0.clone(),
-                    format!("{{ tag: \"{}\", data: {} }}", union_tag, input.0).into()
+                    output_var.string(),
+                    format!("{{ tag: \"{}\", data: {} }}", union_tag, variant_inner_var).into()
                 );
             }
-            ib::Operation::TypeCall { ref input, ref output, ref type_name,
-                                      typ, ref named_type } => {
+            ib::Operation::TypeCall { ref input_var, ref type_name,
+                                      ref typ, ref named_type } => {
                 let named_type_inner = named_type.borrow();
 
-                let call = call_for(typ, named_type_inner.type_id, &input.0);
-                let assign_var = assign_target_for(typ, &output.0);
+                let call = call_for(typ, named_type_inner.type_id, input_var.str());
+                let assign_var = assign_target_for(typ);
 
                 b.var_assign(assign_var, call.into());
             }
@@ -146,27 +134,27 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
     Ok(b)
 }
 
-fn call_for(typ: ib::CallType, type_id: u64, input: &str) -> String {
-    match typ {
-        ib::CallType::SizeOf =>
+fn call_for(typ: &ib::CallType, type_id: u64, input: &str) -> String {
+    match *typ {
+        ib::CallType::SizeOf(_) =>
             format!("type_{}_size_of({})",
                     type_id, input),
         ib::CallType::Serialize =>
             format!("type_{}_serialize({}, buffer, offset)",
                     type_id, input),
-        ib::CallType::Deserialize =>
+        ib::CallType::Deserialize(_) =>
             format!("type_{}_deserialize({}, offset)",
                     type_id, input),
     }
 }
 
-fn assign_target_for(typ: ib::CallType, output: &str) -> String {
-    match typ {
-        ib::CallType::SizeOf =>
+fn assign_target_for(typ: &ib::CallType) -> String {
+    match *typ {
+        ib::CallType::SizeOf(ref output) =>
             format!("{}", output),
         ib::CallType::Serialize =>
             format!("offset"),
-        ib::CallType::Deserialize =>
+        ib::CallType::Deserialize(ref output) =>
             format!("[{}, offset]", output),
     }
 }
@@ -177,8 +165,12 @@ fn build_expr(expr: &ib::Expr) -> Result<Expr> {
         ib::Expr::Var(ref var) => var.0.clone().into(),
         ib::Expr::Literal(ib::Literal::Number(ref num)) =>
             num.clone(),
-        ib::Expr::ContainerField { ref value, ref field } =>
-            format!("{}[{:?}]", build_expr(value)?.0, field),
+        ib::Expr::ContainerField { ref input_var, ref field } =>
+            format!("{}[{:?}]", input_var, field),
+        ib::Expr::ArrayLength(ref array) =>
+            format!("{}.length", array),
+        ib::Expr::BinarySize(ref binary, _) =>
+            format!("Binary.byteLength({}, 'utf8')", binary),
     };
     Ok(res.into())
 }

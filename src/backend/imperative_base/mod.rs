@@ -8,6 +8,8 @@ pub mod reference;
 
 mod tests;
 
+use std::fmt;
+
 use ::ir::compilation_unit::{TypePath, NamedTypeContainer};
 use ::ir::type_spec::BinaryEncoding;
 
@@ -22,46 +24,68 @@ pub struct ResultBlock {
 
 #[derive(Debug)]
 pub enum Operation {
+    // Special
+    Block(Block),
+
+    // Assignment
     Assign {
-        name: Var,
+        output_var: Var,
         value: Expr,
     },
-    AddCount(Expr),
-    ForEachArray {
-        array: Var,
-        index: Var,
-        typ: Var,
-        block: Block,
+    AddCount(Var),
+
+    // Value handling
+    ControlFlow {
+        input_var: Var,
+        variant: ControlFlowVariant,
     },
-    MapValue {
-        input: Var,
-        output: Var,
-        operation: MapOperation,
-    },
-    Block(Block),
-    ConstructContainer {
-        output: Var,
-        fields: Vec<(String, Var)>,
-    },
-    ConstructArray {
-        count: Var,
-        ident: u64,
-        item_var: Var,
-        block: Block,
-        output: Var,
-    },
-    ConstructUnion {
-        union_name: String,
-        union_tag: String,
-        output: Var,
-        input: Var,
+    Construct {
+        output_var: Var,
+        variant: ConstructVariant,
     },
     TypeCall {
         typ: CallType,
         named_type: NamedTypeContainer,
         type_name: TypePath,
-        input: Var,
-        output: Var,
+
+        input_var: Var,
+    },
+
+}
+
+#[derive(Debug)]
+pub enum ControlFlowVariant {
+    MatchUnionTag {
+        cases: Vec<UnionTagCase>,
+    },
+    MatchLiteral {
+        cases: Vec<LiteralCase>,
+    },
+    ForEachArray {
+        loop_index_var: Var,
+        loop_value_var: Var,
+        inner: Block,
+    },
+}
+
+#[derive(Debug)]
+pub enum ConstructVariant {
+    Container {
+        fields: Vec<(String, Var)>,
+    },
+    Union {
+        union_name: String,
+        union_tag: String,
+        variant_inner_var: Var,
+    },
+    Array {
+        /// The identifier of the array node. Can be used for naming variables uniquely.
+        array_node_ident: u64,
+        /// Amount of iterations we should perform.
+        count_input_var: Var,
+        /// The result of each iteration.
+        inner_result_var: Var,
+        inner: Block,
     },
 }
 
@@ -76,17 +100,11 @@ pub enum Expr {
     Var(Var),
     Literal(Literal),
     ContainerField {
-        value: Box<Expr>,
+        input_var: Var,
         field: String,
     },
-}
-
-#[derive(Debug)]
-pub enum MapOperation {
-    ArrayLength,
-    BinarySize(BinaryEncoding),
-    UnionTagToExpr(Vec<UnionTagCase>),
-    LiteralToExpr(Vec<LiteralCase>),
+    ArrayLength(Var),
+    BinarySize(Var, BinaryEncoding),
 }
 
 #[derive(Debug)]
@@ -102,27 +120,46 @@ pub struct LiteralCase {
     pub block: Block,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum CallType {
-    SizeOf,
+    SizeOf(Var),
     Serialize,
-    Deserialize,
+    Deserialize(Var),
 }
 impl CallType {
     pub fn short(&self) -> &str {
         match *self {
-            CallType::SizeOf => "size_of",
+            CallType::SizeOf(_) => "size_of",
             CallType::Serialize => "serialize",
-            CallType::Deserialize => "deserialize",
+            CallType::Deserialize(_) => "deserialize",
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Var(pub String);
+impl Var {
+    pub fn string(&self) -> String {
+        self.0.clone()
+    }
+    pub fn str<'a>(&'a self) -> &'a str {
+        &self.0
+    }
+}
 impl From<String> for Var {
     fn from(input: String) -> Var {
         Var(input)
+    }
+}
+impl fmt::Display for Var {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str(&self.0)
+    }
+}
+
+impl From<Operation> for Block {
+    fn from(op: Operation) -> Block {
+        Block(vec![op])
     }
 }
 

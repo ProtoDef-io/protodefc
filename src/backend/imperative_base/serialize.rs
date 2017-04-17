@@ -20,8 +20,7 @@ impl BaseSerialize for SimpleScalarVariant {
     fn serialize(&self, data: &TypeData) -> Result<Block> {
         Ok(Block(vec![
             Operation::TypeCall {
-                input: input_for(data).into(),
-                output: "".to_owned().into(), // TODO
+                input_var: input_for(data).into(),
                 typ: CallType::Serialize,
                 type_name: data.name.clone().into(),
                 named_type: self.target.clone().unwrap(),
@@ -64,11 +63,13 @@ impl BaseSerialize for ArrayVariant {
 
         let child_input_var = input_for_type(&self.child.upgrade());
 
-        ops.push(Operation::ForEachArray {
-            array: input_for(data).into(),
-            index: index_var.clone().into(),
-            typ: child_input_var.clone().into(),
-            block: generate_serialize(self.child.upgrade())?,
+        ops.push(Operation::ControlFlow {
+            input_var: input_for(data).into(),
+            variant: ControlFlowVariant::ForEachArray {
+                loop_index_var: index_var.clone().into(),
+                loop_value_var: child_input_var.clone().into(),
+                inner: generate_serialize(self.child.upgrade())?,
+            },
         });
 
         Ok(Block(ops))
@@ -96,10 +97,11 @@ impl BaseSerialize for UnionVariant {
             })
         }).collect();
 
-        ops.push(Operation::MapValue {
-            input: input_for(data).into(),
-            output: "".to_owned().into(),
-            operation: MapOperation::UnionTagToExpr(cases?),
+        ops.push(Operation::ControlFlow {
+            input_var: input_for(data).into(),
+            variant: ControlFlowVariant::MatchUnionTag {
+                cases: cases?,
+            },
         });
 
         Ok(Block(ops))

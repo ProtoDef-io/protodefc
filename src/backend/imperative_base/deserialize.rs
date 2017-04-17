@@ -17,15 +17,12 @@ pub trait BaseDeserialize: TypeVariant {
 
 impl BaseDeserialize for SimpleScalarVariant {
     fn deserialize(&self, data: &TypeData) -> Result<Block> {
-        Ok(Block(vec![
-            Operation::TypeCall {
-                typ: CallType::Deserialize,
-                type_name: data.name.clone().into(),
-                input: "buffer".to_owned().into(),
-                output: output_for(data).into(),
-                named_type: self.target.clone().unwrap(),
-            }
-        ]))
+        Ok(Operation::TypeCall {
+            input_var: "buffer".to_owned().into(),
+            typ: CallType::Deserialize(output_for(data).into()),
+            type_name: data.name.clone().into(),
+            named_type: self.target.clone().unwrap(),
+        }.into())
     }
 }
 
@@ -53,19 +50,23 @@ impl BaseDeserialize for ContainerVariant {
             let real_field_out = output_for_type(&real_field.child.upgrade());
 
             ops.push(Operation::Assign {
-                name: output_for(data).into(),
+                output_var: output_for(data).into(),
                 value: Expr::Var(real_field_out.into()),
             })
         } else {
-            ops.push(Operation::ConstructContainer {
-                output: output_for(data).into(),
-                fields: self.fields.iter()
-                    .filter(|f| field_is_normal(f))
-                    .map(|field| (
-                        field.name.clone(),
-                        output_for_type(&field.child.upgrade()).into()
-                    ))
-                    .collect(),
+            let fields = self.fields.iter()
+                .filter(|f| field_is_normal(f))
+                .map(|field| (
+                    field.name.clone(),
+                    output_for_type(&field.child.upgrade()).into()
+                ))
+                .collect();
+
+            ops.push(Operation::Construct {
+                output_var: output_for(data).into(),
+                variant: ConstructVariant::Container {
+                    fields: fields,
+                }
             });
         }
 
@@ -88,12 +89,14 @@ impl BaseDeserialize for ArrayVariant {
         let ident = data.ident.unwrap();
         let item_var = format!("array_{}_index", ident);
 
-        ops.push(Operation::ConstructArray {
-            count: count_var.into(),
-            ident: ident,
-            item_var: child_var.into(),
-            block: generate_deserialize(child_rc)?,
-            output: output_for(data).into(),
+        ops.push(Operation::Construct {
+            output_var: output_for(data).into(),
+            variant: ConstructVariant::Array {
+                array_node_ident: ident,
+                count_input_var: count_var.into(),
+                inner_result_var: child_var.into(),
+                inner: generate_deserialize(child_rc)?,
+            }
         });
 
         Ok(Block(ops))
@@ -118,11 +121,13 @@ impl BaseDeserialize for UnionVariant {
 
                 generate_deserialize(child_rc.clone()).map(|v| {
                     i_ops.push(Operation::Block(v));
-                    i_ops.push(Operation::ConstructUnion {
-                        union_name: self.union_name.clone(),
-                        union_tag: case.case_name.clone(),
-                        output: out_var.clone().into(),
-                        input: output_for_type(&child_rc).into(),
+                    i_ops.push(Operation::Construct {
+                        output_var: out_var.clone().into(),
+                        variant: ConstructVariant::Union {
+                            union_name: self.union_name.clone(),
+                            union_tag: case.case_name.clone(),
+                            variant_inner_var: output_for_type(&child_rc).into(),
+                        }
                     });
 
                     LiteralCase {
@@ -133,10 +138,11 @@ impl BaseDeserialize for UnionVariant {
             })
             .collect();
 
-        ops.push(Operation::MapValue {
-            input: tag_var.into(),
-            output: "".to_owned().into(),
-            operation: MapOperation::LiteralToExpr(cases?),
+        ops.push(Operation::ControlFlow {
+            input_var: tag_var.into(),
+            variant: ControlFlowVariant::MatchLiteral {
+                cases: cases?,
+            },
         });
 
         Ok(Block(ops))
