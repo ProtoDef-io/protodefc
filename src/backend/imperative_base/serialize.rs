@@ -99,7 +99,7 @@ impl BaseSerialize for UnionVariant {
     fn serialize(&self, data: &TypeData) -> Result<Block> {
         let mut ops: Vec<Operation> = Vec::new();
 
-        let cases: Result<Vec<UnionTagCase>> = self.cases.iter().map(|case| {
+        let mut cases: Vec<UnionTagCase> = self.cases.iter().map(|case| {
             let child_rc = case.child.upgrade();
             let child_inner = child_rc.borrow();
 
@@ -114,25 +114,26 @@ impl BaseSerialize for UnionVariant {
                     input_for(&child_inner.data).into()),
                 block: Block(i_ops),
             })
-        }).collect();
+        }).collect::<Result<_>>()?;
 
-        let mut default_ops = Vec::new();
-        let variant_var;
         if let Some(ref case) = self.default_case {
             let child_rc = case.child.upgrade();
-            let inner = generate_serialize(child_rc.clone())?;
-            variant_var = Some(input_for_type(&child_rc).into());
-            default_ops.push(Operation::Block(inner));
-        } else {
-            variant_var = None;
-            default_ops.push(Operation::ThrowError);
+
+            let mut i_ops = Vec::new();
+            i_ops.push(Operation::Block(generate_serialize(child_rc.clone())?));
+
+            cases.push(UnionTagCase {
+                variant_name: case.case_name.clone(),
+                variant_var: Some(input_for_type(&child_rc).into()),
+                block: Block(i_ops),
+            });
         }
 
         ops.push(Operation::ControlFlow {
             input_var: input_for(data).into(),
             variant: ControlFlowVariant::MatchUnionTag {
-                cases: cases?,
-                default: (variant_var, Block(default_ops)),
+                cases: cases,
+                default: (None, Operation::ThrowError.into()),
             },
         });
 
