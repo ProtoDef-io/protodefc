@@ -1,11 +1,68 @@
 use ::errors::*;
 use ::ir::compilation_unit::{CompilationUnit, TypeKind};
+use ::ir::spec::TypeContainer;
 use super::builder::Block;
 use itertools::Itertools;
+use ::backend::imperative_base as ib;
 
-use super::size_of::generate_size_of;
-use super::serialize::generate_serialize;
-use super::deserialize::generate_deserialize;
+fn generate_serialize(fun_name: String, typ: TypeContainer) -> Result<Block> {
+    let base = ib::serialize::generate_serialize(typ.clone())?;
+
+    let mut ib = Block::new();
+
+    {
+        let typ_inner = typ.borrow();
+        ib.var_assign(ib::utils::input_for(&typ_inner.data), "input".into());
+    }
+
+    ib.scope(super::ib_to_js::build_block(&base)?);
+    ib.return_("offset".into());
+
+    let mut b = Block::new();
+    b.decl_fun(
+        fun_name,
+        vec!["input".into(), "buffer".into(), "offset".into()],
+        ib
+    );
+    Ok(b)
+}
+
+pub fn generate_size_of(fun_name: String, typ: TypeContainer) -> Result<Block> {
+    let base = ib::size_of::generate_size_of(typ.clone())?;
+
+    let mut ib = Block::new();
+    ib.var_assign("count".into(), "0".into());
+
+    {
+        let typ_inner = typ.borrow();
+        ib.var_assign(ib::utils::input_for(&typ_inner.data), "input".into());
+    }
+
+    ib.scope(super::ib_to_js::build_block(&base)?);
+    ib.return_("count".into());
+
+    let mut b = Block::new();
+    b.decl_fun(fun_name, vec!["input".into()], ib);
+    Ok(b)
+}
+
+pub fn generate_deserialize(fun_name: String, typ: TypeContainer) -> Result<Block> {
+    let base = ib::deserialize::generate_deserialize(typ.clone())?;
+
+    let mut ib = Block::new();
+
+    ib.scope(super::ib_to_js::build_block(&base)?);
+    ib.return_(format!("[{}, offset]",
+                       ib::utils::output_for_type(&typ.clone())).into());
+
+    let mut b = Block::new();
+    b.decl_fun(
+        fun_name,
+        vec!["buffer".into(), "offset".into()],
+        ib
+    );
+    Ok(b)
+}
 
 pub fn generate_compilation_unit(cu: &CompilationUnit) -> Result<Block> {
     let mut b = Block::new();

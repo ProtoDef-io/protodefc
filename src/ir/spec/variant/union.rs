@@ -11,7 +11,6 @@ use ::ir::type_spec::{WeakTypeSpecContainer, TypeSpecVariant,
 pub struct UnionVariant {
     pub union_name: String,
 
-    pub match_target_ref: Reference,
     pub match_target_handle: SpecReferenceHandle,
 
     pub cases: Vec<UnionCase>,
@@ -85,7 +84,6 @@ impl UnionVariantBuilder {
                 variant: Variant::Union(UnionVariant {
                     union_name: union_name,
 
-                    match_target_ref: match_target,
                     match_target_handle: match_target_handle,
 
                     cases: Vec::new(),

@@ -1,7 +1,4 @@
 use ::spec_to_final_compilation_unit;
-use ::backend::javascript::size_of::generate_size_of;
-use ::backend::javascript::serialize::generate_serialize;
-use ::backend::javascript::deserialize::generate_deserialize;
 use ::backend::javascript::cu_to_js::generate_compilation_unit;
 use super::super::builder::ToJavascript;
 use ::itertools::Itertools;
