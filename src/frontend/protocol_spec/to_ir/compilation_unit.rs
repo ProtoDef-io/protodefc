@@ -2,7 +2,7 @@ use ::errors::*;
 use ::ir::IdGenerator;
 use ::ir::compilation_unit::{CompilationUnit, NSPath, CompilationUnitNS, NamedType,
                              TypePath, TypeKind, NativeType};
-use ::ir::type_spec::{TypeSpecVariant, IntegerSpec, IntegerSize, Signedness};
+use ::ir::type_spec::{TypeSpecVariant, IntegerSpec, IntegerSize};
 
 use super::super::ast;
 use super::spec;

@@ -1,5 +1,8 @@
 pub mod property;
+pub mod literal;
+use self::literal::TypeSpecLiteral;
 
+use ::errors::*;
 use ::ir::name::Name;
 use ::rc_container::{Container, WeakContainer};
 
@@ -81,14 +84,9 @@ pub enum IntegerSize {
     IndexSize,
 }
 #[derive(Debug)]
-pub enum Signedness {
-    Signed,
-    Unsigned,
-}
-#[derive(Debug)]
 pub struct IntegerSpec {
     pub size: IntegerSize,
-    pub signed: Signedness,
+    pub signed: bool,
 }
 
 #[derive(Debug)]
@@ -125,6 +123,10 @@ impl TypeSpecContainer {
         self
     }
 
+    pub fn parse_literal(&self, string: &str) -> Result<TypeSpecLiteral> {
+        TypeSpecLiteral::parse(self, string)
+    }
+
 }
 
 impl TypeSpecVariant {
@@ -153,6 +155,7 @@ impl TypeSpecVariant {
             _ => false,
         }
     }
+
 }
 
 impl Into<TypeSpecContainer> for TypeSpecVariant {

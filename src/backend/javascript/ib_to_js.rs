@@ -195,7 +195,7 @@ fn build_expr(expr: &ib::Expr) -> Result<Expr> {
         ib::Expr::Literal(ib::Literal::Number(ref num)) =>
             num.clone(),
         ib::Expr::ContainerField { ref input_var, ref field } =>
-            format!("{}[{:?}]", input_var, field),
+            format!("{}[\"{}\"]", input_var, field.snake()),
         ib::Expr::ArrayLength(ref array) =>
             format!("{}.length", array),
         ib::Expr::BinarySize(ref binary, _) =>

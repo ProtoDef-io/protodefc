@@ -11,6 +11,7 @@ extern crate itertools;
 extern crate matches;
 extern crate regex;
 extern crate inflector;
+extern crate num_bigint;
 
 pub mod ir;
 pub mod backend;

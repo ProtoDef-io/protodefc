@@ -23,15 +23,15 @@ let ref_length = {};
 let ref_buf = buffer.Buffer.from([{}]);
 
 // size_of
-assert.deepEqual(exports["::test"]["size_of"](ref_js_data), ref_length);
+assert.deepEqual(exports["test"]["size_of"](ref_js_data), ref_length);
 
 // serialize
 let buf = buffer.Buffer.alloc(ref_length, 0);
-exports["::test"]["serialize"](ref_js_data, buf, 0);
+exports["test"]["serialize"](ref_js_data, buf, 0);
 assert(buf.equals(ref_buf));
 
 // deserialize
-let ret = exports["::test"]["deserialize"](ref_buf, 0);
+let ret = exports["test"]["deserialize"](ref_buf, 0);
 assert.deepEqual(ret, [ref_js_data, ref_length]);
 "#,
         data, bin_data.len(), bin_data_arr
@@ -48,6 +48,7 @@ fn simple_scalar() {
 @type integer("u8")
 def_native("u8");
 
+@export "test"
 def("test") => u8;
 "#,
         "0",
@@ -62,6 +63,7 @@ fn container() {
 @type integer("u8")
 def_native("u8");
 
+@export "test"
 def("test") => container {
     field("foo") => u8;
     field("bar") => u8;
@@ -79,6 +81,7 @@ fn array() {
 @type integer("u8")
 def_native("u8");
 
+@export "test"
 def("test") => container(virtual: "true") {
     virtual_field("len", value: "arr/@length") => u8;
     field("arr") => array(length: "../len") => u8;
@@ -95,6 +98,7 @@ fn union() {
 @type integer("u8")
 def_native("u8");
 
+@export "test"
 def("test") => container(virtual: "true") {
     virtual_field("tag", value: "data/@tag") => u8;
     field("data") => union("test_union", tag: "../tag") {
@@ -125,6 +129,7 @@ fn union_default() {
 @type integer("u8")
 def_native("u8");
 
+@export "test"
 def("test") => container {
     field("tag") => u8;
     field("data") => union("test_union", tag: "../tag") {
@@ -160,6 +165,7 @@ def_native("sized_string") {
 @type integer("u8")
 def_native("u8");
 
+@export "test"
 def("test") => container(virtual: "true") {
     virtual_field("size", value: "string/@size") => u8;
     field("string") => sized_string(size: "../size");

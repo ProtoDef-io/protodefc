@@ -47,8 +47,8 @@ fn parse_integer_spec(input: &str) -> Result<IntegerSpec> {
     let tail = &input[1..];
 
     let signed = match *head_char {
-        b'i' => Signedness::Signed,
-        b'u' => Signedness::Unsigned,
+        b'i' => true,
+        b'u' => false,
         _ => bail!("integer spec string must start with either i or u"),
     };
 

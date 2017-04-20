@@ -1,5 +1,5 @@
 use ::errors::*;
-use super::{TypeSpecVariant, TypeSpecContainer, IntegerSpec, IntegerSize, Signedness, BinaryEncoding};
+use super::{TypeSpecVariant, TypeSpecContainer, IntegerSpec, IntegerSize, BinaryEncoding};
 use ::ir::name::Name;
 
 #[derive(Debug, Clone)]
@@ -23,7 +23,7 @@ impl TypeSpecVariant {
                     variant: TypeSpecPropertyVariant::BinarySize(spec.encoding.clone()),
                     type_spec: TypeSpecVariant::Integer(IntegerSpec {
                         size: IntegerSize::IndexSize,
-                        signed: Signedness::Unsigned,
+                        signed: false,
                     }).into(),
                 }
             }
@@ -32,7 +32,7 @@ impl TypeSpecVariant {
                     variant: TypeSpecPropertyVariant::ArrayLength,
                     type_spec: TypeSpecVariant::Integer(IntegerSpec {
                         size: IntegerSize::IndexSize,
-                        signed: Signedness::Unsigned,
+                        signed: false,
                     }).into(),
                 }
             }

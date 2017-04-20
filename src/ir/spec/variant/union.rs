@@ -6,6 +6,7 @@ use ::ir::spec::data::{SpecChildHandle, SpecReferenceHandle, ReferenceAccessTime
 use ::ir::spec::reference::Reference;
 use ::ir::type_spec::{WeakTypeSpecContainer, TypeSpecVariant,
                       EnumSpec, EnumVariantSpec};
+use ::ir::type_spec::literal::TypeSpecLiteral;
 use ::ir::name::Name;
 
 #[derive(Debug)]
@@ -16,14 +17,14 @@ pub struct UnionVariant {
 
     pub cases: Vec<UnionCase>,
     pub default_case: Option<UnionCase>,
-
-    pub tag_property_type: Option<WeakTypeSpecContainer>,
 }
 
 #[derive(Debug)]
 pub struct UnionCase {
     pub case_name: Name,
+
     pub match_val_str: String,
+    pub match_val: Option<TypeSpecLiteral>,
 
     pub child: WeakTypeContainer,
     pub child_handle: SpecChildHandle,
@@ -34,10 +35,9 @@ impl TypeVariant for UnionVariant {
 
     fn has_spec_property(&self, data: &TypeData, name: &Name)
                          -> Result<Option<WeakTypeSpecContainer>> {
-        // TODO: Infer type
         match name.snake() {
-            //"tag" => Ok(self.tag_property_type.clone()),
-            "tag" => Ok(data.get_reference_data(self.match_target_handle).target_type_spec.clone().map(|i| i.downgrade())),
+            "tag" => Ok(data.get_reference_data(self.match_target_handle)
+                        .target_type_spec.clone().map(|i| i.downgrade())),
             _ => bail!("union variant has no property {:?}", name),
         }
     }
@@ -61,6 +61,27 @@ impl TypeVariant for UnionVariant {
                         }
                     }).collect(),
                 }).into());
+                Ok(())
+            }
+            CompilePass::ValidateTypes => {
+                let target_data = data.get_reference_data(self.match_target_handle);
+                let target_type_spec_rc = target_data.target_type_spec.clone().unwrap()
+                    .follow();
+                let target_type_spec = target_type_spec_rc.borrow();
+
+                for mut case in &mut self.cases {
+                    let parsed_literal = target_type_spec_rc.parse_literal(&case.match_val_str)?;
+                    case.match_val = Some(parsed_literal);
+                }
+
+                match target_type_spec.variant {
+                    TypeSpecVariant::Integer(_) => (),
+                    TypeSpecVariant::Binary(_) => (),
+                    TypeSpecVariant::Boolean => (),
+                    TypeSpecVariant::Enum(_) => (),
+                    _ => bail!("cannot match on type {:?}", target_type_spec_rc),
+                }
+
                 Ok(())
             }
             _ => Ok(())
@@ -89,8 +110,6 @@ impl UnionVariantBuilder {
 
                     cases: Vec::new(),
                     default_case: None,
-
-                    tag_property_type: None,
                 })
             }
         }
@@ -103,6 +122,7 @@ impl UnionVariantBuilder {
             Variant::Union(ref mut variant) => {
                 variant.cases.push(UnionCase {
                     match_val_str: match_val_str,
+                    match_val: None,
                     case_name: case_name,
                     child: child.downgrade(),
                     child_handle: case_handle,
@@ -120,6 +140,7 @@ impl UnionVariantBuilder {
                 let case_handle = self.typ.data.add_child(child.clone());
                 variant.default_case = Some(UnionCase {
                     match_val_str: "".to_owned(), // TODO
+                    match_val: None,
                     case_name: case_name,
                     child: child.downgrade(),
                     child_handle: case_handle,

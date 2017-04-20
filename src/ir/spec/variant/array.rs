@@ -4,7 +4,7 @@ use ::ir::spec::data::{SpecChildHandle, SpecReferenceHandle, ReferenceAccessTime
 use ::ir::spec::reference::Reference;
 use ::ir::name::Name;
 use ::ir::type_spec::{TypeSpecContainer, WeakTypeSpecContainer, TypeSpecVariant,
-                      ArraySpec, ArraySize, IntegerSpec, Signedness, IntegerSize};
+                      ArraySpec, ArraySize, IntegerSpec, IntegerSize};
 use ::ir::compilation_unit::TypePath;
 use super::{Variant, VariantType};
 
