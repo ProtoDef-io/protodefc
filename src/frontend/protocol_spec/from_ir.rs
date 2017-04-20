@@ -66,8 +66,7 @@ fn ir_to_spec_inner(typ: TypeContainer) -> Statement {
                                         Value::Item(Item {
                                             name: Ident::Simple("field".into()),
                                             args: vec![Value::String {
-                                                string: field.name
-                                                    .to_string(),
+                                                string: field.name.snake().to_owned(),
                                                 is_block: false,
                                             }
                                                        .into()],

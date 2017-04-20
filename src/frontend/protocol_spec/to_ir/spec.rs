@@ -2,6 +2,7 @@ use ::ir::spec::TypeContainer;
 use ::errors::*;
 use ::ir::spec::variant::*;
 use ::ir::spec::reference::Reference;
+use ::ir::name::Name;
 
 use super::super::ast::{Ident, Statement, Value};
 
@@ -156,7 +157,11 @@ impl ValuesToIr for UnionVariant {
 
                     let field_type = type_values_to_ir(&stmt.items[1..])?;
 
-                    builder.case(variant_match.into(), variant_name.into(), field_type);
+                    builder.case(
+                        variant_match.into(),
+                        Name::new(variant_name.to_owned())?,
+                        field_type
+                    );
                 }
                 Some("default") => {
                     block_item.validate(1, &[], &[])?;

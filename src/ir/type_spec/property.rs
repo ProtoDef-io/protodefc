@@ -1,5 +1,6 @@
 use ::errors::*;
 use super::{TypeSpecVariant, TypeSpecContainer, IntegerSpec, IntegerSize, Signedness, BinaryEncoding};
+use ::ir::name::Name;
 
 #[derive(Debug, Clone)]
 pub enum TypeSpecPropertyVariant {
@@ -15,8 +16,8 @@ pub struct TypeSpecProperty {
 
 impl TypeSpecVariant {
 
-    pub fn has_property(&self, name: &str) -> Result<TypeSpecProperty> {
-        Ok(match (self, name) {
+    pub fn has_property(&self, name: &Name) -> Result<TypeSpecProperty> {
+        Ok(match (self, name.snake()) {
             (&TypeSpecVariant::Binary(ref spec), "size") => {
                 TypeSpecProperty {
                     variant: TypeSpecPropertyVariant::BinarySize(spec.encoding.clone()),
@@ -35,7 +36,7 @@ impl TypeSpecVariant {
                     }).into(),
                 }
             }
-            _ => bail!("type '{:?}' has no property '{}'", self, name),
+            _ => bail!("type '{:?}' has no property {:?}", self, name),
         })
     }
 

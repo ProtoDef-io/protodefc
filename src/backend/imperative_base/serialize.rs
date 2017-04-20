@@ -20,8 +20,6 @@ pub trait BaseSerialize: TypeVariant {
 
 impl BaseSerialize for SimpleScalarVariant {
     fn serialize(&self, data: &TypeData) -> Result<Block> {
-        println!("{:?}", self.arguments);
-
         let mut ops: Vec<Operation> = Vec::new();
 
         let arguments = self.arguments.iter()
@@ -132,6 +130,7 @@ impl BaseSerialize for UnionVariant {
         ops.push(Operation::ControlFlow {
             input_var: input_for(data).into(),
             variant: ControlFlowVariant::MatchUnionTag {
+                enum_type: data.type_spec.clone().unwrap(),
                 cases: cases,
                 default: (None, Operation::ThrowError.into()),
             },

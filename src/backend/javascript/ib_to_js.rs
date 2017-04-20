@@ -10,7 +10,8 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
         match *operation {
             ib::Operation::ThrowError =>
                 b.expr(format!("throw \"error\"").into()),
-            ib::Operation::Assign { ref output_var, ref value } =>
+            ib::Operation::Declare { .. } => (),
+            ib::Operation::Assign { ref output_var, ref value, .. } =>
                 b.var_assign(output_var.string(), build_expr(value)?.into()),
             ib::Operation::AddCount(ref var) =>
                 b.assign("count".into(),
@@ -42,7 +43,7 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
             },
             ib::Operation::ControlFlow { ref input_var,
                                          variant: ib::ControlFlowVariant::MatchUnionTag {
-                                             ref cases, ref default } } => {
+                                             ref cases, ref default, .. } } => {
                 let mut cases: Vec<(Expr, Block)> = cases.iter()
                     .map(|&ib::UnionTagCase { ref variant_name, ref block,
                                               ref variant_var }| {
@@ -57,7 +58,7 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                             }
                             iib.block(ib);
 
-                            (format!("case \"{}\"", variant_name).into(), iib)
+                            (format!("case \"{}\"", variant_name.snake()).into(), iib)
                         })
                     }).collect::<Result<_>>()?;
 
@@ -108,7 +109,7 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                                        variant: ib::ConstructVariant::Container {
                                            ref fields } } => {
                 let obj_fields = fields.iter()
-                    .map(|&(ref name, ref var)| format!("{}: {}", name, var.0))
+                    .map(|&(ref name, ref var)| format!("{}: {}", name.snake(), var))
                     .join(", ");
 
                 b.var_assign(output_var.string(), format!("{{ {} }}", obj_fields).into());
@@ -136,7 +137,7 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                                            ref union_tag, ref variant_inner_var, .. } } => {
                 b.var_assign(
                     output_var.string(),
-                    format!("{{ tag: \"{}\", data: {} }}", union_tag, variant_inner_var).into()
+                    format!("{{ tag: \"{}\", data: {} }}", union_tag.snake(), variant_inner_var).into()
                 );
             }
             ib::Operation::TypeCall { ref input_var, ref type_name,

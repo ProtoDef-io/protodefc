@@ -16,6 +16,8 @@ rustache = "0.1.0"
 itertools = "0.5.9"
 clap = "2.22.2"
 matches = "0.1.4"
+regex = "0.2.1"
+Inflector = "0.10.0"
 
 [lib]
 name = "protodefc"

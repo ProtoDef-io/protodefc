@@ -8,6 +8,14 @@ use super::super::ast;
 use super::spec;
 use super::type_spec;
 
+fn sequence<A>(a: Option<Result<A>>) -> Result<Option<A>> {
+    match a {
+        Some(Ok(i)) => Ok(Some(i)),
+        Some(Err(i)) => Err(i),
+        None => Ok(None),
+    }
+}
+
 pub fn to_compilation_unit(input: &str) -> Result<CompilationUnit> {
     let ast = ast::parser::parse(input)?;
 
@@ -43,6 +51,14 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
                     .string()
                     .ok_or("argument to def must be string")?;
 
+                // TODO: Validate that there is only the one item
+                let export = sequence(
+                    stmt.attributes.get("export")
+                        .map(|i| i[0].string()
+                             .map(|i| i.to_owned())
+                             .ok_or("export attribute must be string".into()))
+                )?;
+
                 let typ = spec::type_def_to_ir(stmt)
                     .chain_err(|| format!("inside def(\"{}\")", name))?;
 
@@ -54,6 +70,7 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
                     typ: TypeKind::Type(typ),
                     type_id: gen.get(),
                     type_spec: TypeSpecVariant::Referenced(None).into(),
+                    export: export,
                     arguments: vec![],
                 })?;
             }
@@ -85,6 +102,7 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
                     type_id: gen.get(),
                     type_spec: TypeSpecVariant::Referenced(None).into(),
                     arguments: super::native_type::block_to_args(&head_item.block)?,
+                    export: None,
                 })?;
             }
             "namespace" => {

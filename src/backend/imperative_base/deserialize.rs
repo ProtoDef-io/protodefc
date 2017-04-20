@@ -68,6 +68,7 @@ impl BaseDeserialize for ContainerVariant {
             let real_field_out = output_for_type(&real_field.child.upgrade());
 
             ops.push(Operation::Assign {
+                declare: true,
                 output_var: output_for(data).into(),
                 value: Expr::Var(real_field_out.into()),
             })

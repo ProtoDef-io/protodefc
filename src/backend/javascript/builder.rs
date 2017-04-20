@@ -1,6 +1,56 @@
 
 pub struct Block(Vec<Statement>);
 
+pub enum Statement {
+    Assign {
+        variant: AssignVariant,
+        name: String,
+        expr: Expr,
+    },
+    If {
+        conds: Vec<(Expr, Block)>,
+        else_: Option<Block>,
+    },
+    Return {
+        expr: Expr,
+    },
+    FunctionDeclaration {
+        name: String,
+        args: Vec<String>,
+        block: Block,
+    },
+    Expr {
+        expr: Expr,
+    },
+    Scope {
+        block: Block,
+    },
+    Block {
+        block: Block,
+    },
+    Comment {
+        text: String,
+    },
+    For {
+        init: Expr,
+        cond: Expr,
+        incr: Expr,
+        block: Block,
+    },
+    Switch {
+        input: Expr,
+        cases: Vec<(Expr, Block)>,
+    },
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum AssignVariant {
+    None,
+    Var,
+}
+
+pub struct Expr(pub String);
+
 impl Block {
 
     pub fn new() -> Block {
@@ -75,7 +125,6 @@ impl ToJavascript for Block {
     }
 }
 
-pub struct Expr(pub String);
 impl From<String> for Expr {
     fn from(string: String) -> Self {
         Expr(string)
@@ -87,11 +136,6 @@ impl<'a> From<&'a str> for Expr {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-pub enum AssignVariant {
-    None,
-    Var,
-}
 impl AssignVariant {
     fn append(self, out: &mut String) {
         let s = match self {
@@ -102,47 +146,6 @@ impl AssignVariant {
     }
 }
 
-pub enum Statement {
-    Assign {
-        variant: AssignVariant,
-        name: String,
-        expr: Expr,
-    },
-    If {
-        conds: Vec<(Expr, Block)>,
-        else_: Option<Block>,
-    },
-    Return {
-        expr: Expr,
-    },
-    FunctionDeclaration {
-        name: String,
-        args: Vec<String>,
-        block: Block,
-    },
-    Expr {
-        expr: Expr,
-    },
-    Scope {
-        block: Block,
-    },
-    Block {
-        block: Block,
-    },
-    Comment {
-        text: String,
-    },
-    For {
-        init: Expr,
-        cond: Expr,
-        incr: Expr,
-        block: Block,
-    },
-    Switch {
-        input: Expr,
-        cases: Vec<(Expr, Block)>,
-    },
-}
 
 impl ToJavascript for Statement {
     fn to_javascript(&self, out: &mut String, level: u64) {

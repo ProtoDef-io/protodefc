@@ -3,6 +3,7 @@ use ::ir::spec::reference::Reference;
 use ::ir::spec::data::{SpecChildHandle, SpecReferenceHandle, ReferenceAccessTime};
 use ::ir::spec::variant::{Variant, VariantType};
 use ::ir::type_spec::{TypeSpecVariant, ContainerSpec, ContainerFieldSpec, WeakTypeSpecContainer};
+use ::ir::name::Name;
 use ::errors::*;
 
 #[derive(Debug)]
@@ -16,13 +17,13 @@ impl TypeVariant for ContainerVariant {
         VariantType::Container
     }
 
-    fn resolve_child_name(&self, _data: &TypeData, name: &str) -> Result<WeakTypeContainer> {
+    fn resolve_child_name(&self, _data: &TypeData, name: &Name) -> Result<WeakTypeContainer> {
         self.fields
             .iter()
-            .find(|f| f.name == name)
+            .find(|f| &f.name == name)
             .map(|f| f.child.clone())
             .ok_or_else(|| CompilerError::ChildResolveError {
-                name: name.to_owned(),
+                name: name.clone(),
                 parent_variant: "container".into(),
             }.into())
 
@@ -35,7 +36,7 @@ impl TypeVariant for ContainerVariant {
         match *pass {
             CompilePass::MakeTypeSpecs => {
                 data.type_spec = Some(TypeSpecVariant::Container(ContainerSpec {
-                    name: "".to_owned().into(), // TODO
+                    name: Name::new("placeholder".to_owned())?, // TODO
                     fields: self.fields.iter().map(|f| {
                         let child_rc = f.child.clone().upgrade();
                         let child = child_rc.borrow();
@@ -57,7 +58,7 @@ impl TypeVariant for ContainerVariant {
 
 #[derive(Debug)]
 pub struct ContainerField {
-    pub name: String,
+    pub name: Name,
 
     pub child: WeakTypeContainer,
     pub child_handle: SpecChildHandle,
@@ -124,7 +125,7 @@ impl ContainerVariantBuilder {
         match self.typ.variant {
             Variant::Container(ref mut variant) => {
                 variant.fields.push(ContainerField {
-                    name: name,
+                    name: name.into(),
                     child: typ.downgrade(),
                     child_handle: child_handle,
                     field_type: container_type,

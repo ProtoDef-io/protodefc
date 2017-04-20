@@ -66,6 +66,7 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                 res_num += 1;
 
                 ops.push(Operation::Assign {
+                    declare: true,
                     output_var: next_res.clone().into(),
                     value: Expr::ContainerField {
                         input_var: prev_res.into(),
@@ -82,15 +83,19 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                 let next_res = var_for(&format!("int_val_{}", res_num), data);
                 res_num += 1;
 
-                match name.as_ref() {
+                match name.snake() {
                     "tag" => {
                         let node_rc = node.clone().unwrap().upgrade();
                         let node_inner = node_rc.borrow();
 
+                        ops.push(Operation::Declare {
+                            var: next_res.to_owned().into()
+                        });
                         match node_inner.variant {
                             Variant::Union(ref union) => {
                                 let cases = union.cases.iter().map(|case| {
                                     let block: Block = Operation::Assign {
+                                        declare: false,
                                         output_var: next_res.to_owned().into(),
                                         value: Expr::Literal(Literal::Number(
                                             case.match_val_str.clone()))
@@ -106,6 +111,8 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                                 ops.push(Operation::ControlFlow {
                                     input_var: prev_res.into(),
                                     variant: ControlFlowVariant::MatchUnionTag {
+                                        enum_type: node_inner.data.type_spec
+                                            .clone().unwrap(),
                                         cases: cases,
                                         // TODO: This should be a compile-time error
                                         default: (None, Operation::ThrowError.into()),
@@ -132,12 +139,14 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
                 match property.variant {
                     TypeSpecPropertyVariant::ArrayLength => {
                         ops.push(Operation::Assign {
+                            declare: true,
                             output_var: next_res.clone().into(),
                             value: Expr::ArrayLength(prev_res.into()),
                         });
                     }
                     TypeSpecPropertyVariant::BinarySize(ref encoding) => {
                         ops.push(Operation::Assign {
+                            declare: true,
                             output_var: next_res.clone().into(),
                             value: Expr::BinarySize(prev_res.into(), encoding.clone()),
                         });
@@ -152,6 +161,7 @@ fn build_reference_accessor_inner(_variant: &TypeVariant, data: &TypeData,
     }
 
     ops.push(Operation::Assign {
+        declare: true,
         output_var: output_var,
         value: Expr::Var(prev_res.into()),
     });

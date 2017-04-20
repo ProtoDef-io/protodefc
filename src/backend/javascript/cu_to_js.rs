@@ -82,7 +82,9 @@ pub fn generate_compilation_unit(cu: &CompilationUnit) -> Result<Block> {
         let typ_name_deserialize = format!("{}_deserialize", typ_base_name);
 
         let typ_ns_name = format!("{}", typ_inner.path);
-        exports.push((typ_ns_name.clone(), typ_base_name.clone()));
+        if let Some(ref name) = typ_inner.export {
+            exports.push((name.clone(), typ_base_name.clone()));
+        }
 
         match typ_inner.typ {
             TypeKind::Type(ref type_container) => {

@@ -3,7 +3,7 @@ use ::ir::compilation_unit::TypePath;
 
 macro_rules! default_resolve_child_name_impl {
     () => {
-        fn resolve_child_name(&self, data: &TypeData, _name: &str)
+        fn resolve_child_name(&self, data: &TypeData, _name: &Name)
                               -> Result<WeakTypeContainer> {
             bail!("attempted to access child of unsupported type {:?}",
                   self.get_type(data));
@@ -12,9 +12,9 @@ macro_rules! default_resolve_child_name_impl {
 }
 macro_rules! default_has_property_impl {
     () => {
-        fn has_spec_property(&self, _data: &TypeData, prop_name: &str)
+        fn has_spec_property(&self, _data: &TypeData, prop_name: &Name)
                              -> Result<Option<WeakTypeSpecContainer>> {
-            bail!("variant has no property '{}'", prop_name);
+            bail!("variant has no property {:?}", prop_name);
         }
     }
 }

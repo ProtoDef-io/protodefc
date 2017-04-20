@@ -9,6 +9,8 @@ extern crate rustache;
 extern crate itertools;
 #[macro_use]
 extern crate matches;
+extern crate regex;
+extern crate inflector;
 
 pub mod ir;
 pub mod backend;

@@ -2,6 +2,7 @@ use ::errors::*;
 use ::ir::spec::{TypeVariant, TypeData, Type, WeakTypeContainer, TypeContainer, CompilePass};
 use ::ir::spec::data::{SpecChildHandle, SpecReferenceHandle, ReferenceAccessTime};
 use ::ir::spec::reference::Reference;
+use ::ir::name::Name;
 use ::ir::type_spec::{TypeSpecContainer, WeakTypeSpecContainer, TypeSpecVariant,
                       ArraySpec, ArraySize, IntegerSpec, Signedness, IntegerSize};
 use ::ir::compilation_unit::TypePath;
@@ -23,9 +24,9 @@ impl TypeVariant for ArrayVariant {
         VariantType::Array
     }
 
-    fn has_spec_property(&self, _data: &TypeData, _name: &str)
+    fn has_spec_property(&self, _data: &TypeData, _name: &Name)
                     -> Result<Option<WeakTypeSpecContainer>> {
-        bail!("array variant has no property '{}'")
+        bail!("array variant has no property {:?}")
     }
 
     fn do_compile_pass(&mut self, data: &mut TypeData, pass: &mut CompilePass)

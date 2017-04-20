@@ -11,7 +11,8 @@ mod tests;
 use std::fmt;
 
 use ::ir::compilation_unit::{TypePath, NamedTypeContainer};
-use ::ir::type_spec::BinaryEncoding;
+use ::ir::type_spec::{TypeSpecContainer, BinaryEncoding};
+use ::ir::name::Name;
 
 #[derive(Debug)]
 pub struct Block(pub Vec<Operation>);
@@ -29,7 +30,11 @@ pub enum Operation {
     ThrowError,
 
     // Assignment
+    Declare {
+        var: Var,
+    },
     Assign {
+        declare: bool,
         output_var: Var,
         value: Expr,
     },
@@ -58,6 +63,7 @@ pub enum Operation {
 #[derive(Debug)]
 pub enum ControlFlowVariant {
     MatchUnionTag {
+        enum_type: TypeSpecContainer,
         cases: Vec<UnionTagCase>,
         default: (Option<Var>, Block),
     },
@@ -75,11 +81,11 @@ pub enum ControlFlowVariant {
 #[derive(Debug)]
 pub enum ConstructVariant {
     Container {
-        fields: Vec<(String, Var)>,
+        fields: Vec<(Name, Var)>,
     },
     Union {
-        union_name: String,
-        union_tag: String,
+        union_name: Name,
+        union_tag: Name,
         variant_inner_var: Var,
     },
     Array {
@@ -105,7 +111,7 @@ pub enum Expr {
     Literal(Literal),
     ContainerField {
         input_var: Var,
-        field: String,
+        field: Name,
     },
     ArrayLength(Var),
     BinarySize(Var, BinaryEncoding),
@@ -113,7 +119,7 @@ pub enum Expr {
 
 #[derive(Debug)]
 pub struct UnionTagCase {
-    pub variant_name: String,
+    pub variant_name: Name,
     pub variant_var: Option<Var>,
     pub block: Block,
 }

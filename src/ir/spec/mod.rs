@@ -16,6 +16,7 @@ use std::fmt::Debug;
 use ::rc_container::{Container, WeakContainer};
 use ::ir::compilation_unit::{TypePath, CompilationUnit};
 use ::ir::type_spec::WeakTypeSpecContainer;
+use ::ir::name::Name;
 
 pub type TypeContainer = Container<Type>;
 pub type WeakTypeContainer = WeakContainer<Type>;
@@ -30,7 +31,7 @@ pub struct Type {
 /// to get details on how the type should function.
 pub trait TypeVariant: Debug + Any {
 
-    fn has_spec_property(&self, data: &TypeData, prop_name: &str)
+    fn has_spec_property(&self, data: &TypeData, prop_name: &Name)
                          -> Result<Option<WeakTypeSpecContainer>>;
 
     /// Used by the resolve_reference pass to fetch a named child
@@ -38,7 +39,8 @@ pub trait TypeVariant: Debug + Any {
     ///
     /// This should only be implemented for composite types, simple
     /// types should simply return an error here.
-    fn resolve_child_name(&self, data: &TypeData, name: &str) -> Result<WeakTypeContainer>;
+    fn resolve_child_name(&self, data: &TypeData, name: &Name)
+                          -> Result<WeakTypeContainer>;
 
     fn get_type(&self, data: &TypeData) -> VariantType;
 

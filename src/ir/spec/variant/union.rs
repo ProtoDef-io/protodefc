@@ -6,10 +6,11 @@ use ::ir::spec::data::{SpecChildHandle, SpecReferenceHandle, ReferenceAccessTime
 use ::ir::spec::reference::Reference;
 use ::ir::type_spec::{WeakTypeSpecContainer, TypeSpecVariant,
                       EnumSpec, EnumVariantSpec};
+use ::ir::name::Name;
 
 #[derive(Debug)]
 pub struct UnionVariant {
-    pub union_name: String,
+    pub union_name: Name,
 
     pub match_target_handle: SpecReferenceHandle,
 
@@ -21,8 +22,8 @@ pub struct UnionVariant {
 
 #[derive(Debug)]
 pub struct UnionCase {
+    pub case_name: Name,
     pub match_val_str: String,
-    pub case_name: String,
 
     pub child: WeakTypeContainer,
     pub child_handle: SpecChildHandle,
@@ -31,13 +32,13 @@ pub struct UnionCase {
 impl TypeVariant for UnionVariant {
     default_resolve_child_name_impl!();
 
-    fn has_spec_property(&self, data: &TypeData, name: &str)
+    fn has_spec_property(&self, data: &TypeData, name: &Name)
                          -> Result<Option<WeakTypeSpecContainer>> {
         // TODO: Infer type
-        match name {
+        match name.snake() {
             //"tag" => Ok(self.tag_property_type.clone()),
             "tag" => Ok(data.get_reference_data(self.match_target_handle).target_type_spec.clone().map(|i| i.downgrade())),
-            _ => bail!("union variant has no property '{}'", name),
+            _ => bail!("union variant has no property {:?}", name),
         }
     }
 
@@ -72,7 +73,7 @@ pub struct UnionVariantBuilder {
 }
 impl UnionVariantBuilder {
 
-    pub fn new(union_name: String, match_target: Reference)
+    pub fn new(union_name: Name, match_target: Reference)
                -> UnionVariantBuilder {
         let mut data = TypeData::default();
         let match_target_handle = data.add_reference(match_target.clone(),
@@ -95,7 +96,7 @@ impl UnionVariantBuilder {
         }
     }
 
-    pub fn case(&mut self, match_val_str: String, case_name: String,
+    pub fn case(&mut self, match_val_str: String, case_name: Name,
                 child: TypeContainer) {
         let case_handle = self.typ.data.add_child(child.clone());
         match self.typ.variant {
@@ -111,7 +112,7 @@ impl UnionVariantBuilder {
         }
     }
 
-    pub fn default(&mut self, case_name: String, child: TypeContainer) -> Result<()> {
+    pub fn default(&mut self, case_name: Name, child: TypeContainer) -> Result<()> {
         match self.typ.variant {
             Variant::Union(ref mut variant) => {
                 ensure!(variant.default_case.is_none(),

@@ -138,19 +138,20 @@ fn resolve_item(item: &ReferenceItem, path_entries: &mut Vec<ReferencePathEntryD
     match *item {
         ReferenceItem::Down(ref name) => {
             path_entries.push(ReferencePathEntryData {
-                operation: ReferencePathEntryOperation::Down(name.0.clone()),
+                operation: ReferencePathEntryOperation::Down(name.clone()),
                 node: current_node.clone().map(|i| i.downgrade()),
                 type_spec: current_type.downgrade(),
             });
 
             type_next = current_type.borrow().variant
-                .get_child_name(&name.0)
-                .ok_or_else(|| format!("type has no field '{}'", name.0))?.follow();
+                .get_child_name(name)
+                .ok_or_else(|| format!("type has no field '{}'", name.snake()))?
+            .follow();
 
             if let Some(ref current_node_inner_rc) = current_node {
                 let node_inner = current_node_inner_rc.borrow();
                 node_next = node_inner.variant.to_variant()
-                    .resolve_child_name(&node_inner.data, &name.0)
+                    .resolve_child_name(&node_inner.data, name)
                     .ok().map(|i| i.upgrade());
             } else {
                 node_next = None;
@@ -164,11 +165,11 @@ fn resolve_item(item: &ReferenceItem, path_entries: &mut Vec<ReferencePathEntryD
             if let Some(ref current_node_inner_rc) = current_node {
                 let node_inner = current_node_inner_rc.borrow();
                 let prop_type_res = node_inner.variant.to_variant()
-                    .has_spec_property(&node_inner.data, &name.0);
+                    .has_spec_property(&node_inner.data, name);
 
                 if let Some(ref prop_type) = prop_type_res.ok() {
                     path_entries.push(ReferencePathEntryData {
-                        operation: ReferencePathEntryOperation::NodeProperty(name.0.clone()),
+                        operation: ReferencePathEntryOperation::NodeProperty(name.clone()),
                         node: current_node.clone().map(|i| i.downgrade()),
                         type_spec: current_type.downgrade(),
                     });
@@ -183,7 +184,7 @@ fn resolve_item(item: &ReferenceItem, path_entries: &mut Vec<ReferencePathEntryD
             }
 
             let type_inner = current_type.borrow();
-            let property = type_inner.variant.has_property(&name.0)?;
+            let property = type_inner.variant.has_property(name)?;
             type_next = property.type_spec.clone().follow();
 
             path_entries.push(ReferencePathEntryData {

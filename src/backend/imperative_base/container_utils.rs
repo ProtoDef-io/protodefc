@@ -23,12 +23,14 @@ fn build_field_accessor_inner(variant: &ContainerVariant, data: &TypeData,
         ContainerFieldType::Normal => {
             if variant.virt {
                 block.push(Operation::Assign {
+                    declare: true,
                     output_var: chain_var.to_owned().into(),
                     value: Expr::Var(input_for(data).into()),
                 });
                 Ok(())
             } else {
                 block.push(Operation::Assign {
+                    declare: true,
                     output_var: chain_var.to_owned().into(),
                     value: Expr::ContainerField {
                         input_var: input_for(data).into(),

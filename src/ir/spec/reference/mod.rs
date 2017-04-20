@@ -44,10 +44,10 @@ impl Reference {
         for item in self.items.iter().map(|i| Some(i)).intersperse(None) {
             match item {
                 None => ret.push_str("/"),
-                Some(&ReferenceItem::Down(ref name)) => ret.push_str(&name.0),
+                Some(&ReferenceItem::Down(ref name)) => ret.push_str(name.snake()),
                 Some(&ReferenceItem::Property(ref name)) => {
                     ret.push_str("@");
-                    ret.push_str(&name.0);
+                    ret.push_str(name.snake());
                 }
             }
         }

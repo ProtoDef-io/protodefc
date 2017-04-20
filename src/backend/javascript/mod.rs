@@ -8,7 +8,9 @@ mod tests;
 
 use ::ir::compilation_unit::CompilationUnit;
 use ::errors::*;
+
 use self::builder::ToJavascript;
+
 pub fn compilation_unit_to_javascript(cu: &CompilationUnit) -> Result<String> {
     let block = cu_to_js::generate_compilation_unit(cu)?;
     let mut out = String::new();

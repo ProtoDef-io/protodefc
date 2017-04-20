@@ -3,6 +3,7 @@ use ::ir::spec::{TypeContainer, WeakTypeContainer};
 use ::ir::spec::reference::Reference;
 use ::ir::type_spec::{TypeSpecContainer, WeakTypeSpecContainer};
 use ::ir::type_spec::property::TypeSpecProperty;
+use ::ir::name::Name;
 
 #[derive(Debug)]
 pub struct TypeData {
@@ -48,9 +49,9 @@ pub struct ReferencePathEntryData {
 }
 #[derive(Debug, Clone)]
 pub enum ReferencePathEntryOperation {
-    Down(String),
-    NodeProperty(String),
-    TypeProperty(String),
+    Down(Name),
+    NodeProperty(Name),
+    TypeProperty(Name),
     TypeSpecProperty(TypeSpecProperty),
 }
 

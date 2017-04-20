@@ -1,5 +1,6 @@
 use ::ir::spec::variant::VariantType;
 use ::ir::spec::reference::Reference;
+use ::ir::name::Name;
 
 
 error_chain! {
@@ -25,10 +26,10 @@ error_chain! {
 pub enum CompilerError {
 
     /// The given variant does not have this property.
-    NoProperty { variant: VariantType, property: String, },
+    NoProperty { variant: VariantType, property: Name, },
 
     /// Attempted to resolve a nonexistent field on a variant.
-    ChildResolveError { parent_variant: String, name: String, },
+    ChildResolveError { parent_variant: Name, name: Name, },
 
     /// Attempted to match on a type which does not support it.
     UnmatchableType { variant: VariantType, },
@@ -39,7 +40,7 @@ pub enum CompilerError {
     /// Error occurred while inside a variant.
     InsideVariant { variant: VariantType, },
     /// Error occurred while inside a named field.
-    InsideNamed { name: String, },
+    InsideNamed { name: Name, },
 
     /// An error occurred in a nom parser.
     NomParseError(::nom::verbose_errors::Err<usize>),
@@ -51,10 +52,10 @@ impl CompilerError {
     pub fn display(&self) -> String {
         match *self {
             CompilerError::NoProperty { ref variant, ref property } =>
-                format!("'{:?}' variant has no property '{}'",
+                format!("'{:?}' variant has no property '{:?}'",
                         variant, property),
             CompilerError::ChildResolveError { ref parent_variant, ref name } =>
-                format!("'{}' variant has no child with name '{}'",
+                format!("'{:?}' variant has no child with name '{:?}'",
                         parent_variant, name),
             CompilerError::UnmatchableType { ref variant } =>
                 format!("'{:?}' does not support matching",

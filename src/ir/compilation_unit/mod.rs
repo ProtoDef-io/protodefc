@@ -2,6 +2,7 @@ use ::TypeContainer;
 use ::errors::*;
 use itertools::Itertools;
 use ::std::fmt;
+use ::std::collections::HashMap;
 
 use ::rc_container::{Container, WeakContainer};
 use ::ir::type_spec::TypeSpecContainer;
@@ -13,12 +14,14 @@ pub type WeakNamedTypeContainer = WeakContainer<NamedType>;
 #[derive(Debug)]
 pub struct CompilationUnit {
     pub namespaces: Vec<CompilationUnitNS>,
+    pub exports: HashMap<String, NamedTypeContainer>,
 }
 
 #[derive(Debug)]
 pub struct CompilationUnitNS {
     pub path: NSPath,
     pub types: Vec<NamedTypeContainer>,
+    pub exports: HashMap<String, NamedTypeContainer>,
 }
 
 #[derive(Debug)]
@@ -28,6 +31,7 @@ pub struct NamedType {
     pub type_spec: TypeSpecContainer,
     pub type_id: u64,
     pub arguments: Vec<NamedTypeArgument>,
+    pub export: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -84,6 +88,7 @@ impl CompilationUnit {
     pub fn new() -> CompilationUnit {
         CompilationUnit {
             namespaces: Vec::new(),
+            exports: HashMap::new(),
         }
     }
 
@@ -104,6 +109,13 @@ impl CompilationUnit {
         if let Some(_) = self.namespaces.iter().find(|t| t.path == ns.path) {
             bail!("duplicate namespace '{:?}'", ns.path);
         }
+
+        for (name, typ) in &ns.exports {
+            ensure!(!self.exports.contains_key(name),
+                    "duplicate export '{}'", name);
+            self.exports.insert(name.clone(), typ.clone());
+        }
+
         self.namespaces.push(ns);
         Ok(())
     }
@@ -163,6 +175,7 @@ impl CompilationUnitNS {
         CompilationUnitNS {
             path: path,
             types: Vec::new(),
+            exports: HashMap::new(),
         }
     }
 
@@ -172,7 +185,16 @@ impl CompilationUnitNS {
                   typ.path);
         }
 
-        self.types.push(NamedTypeContainer::new(typ));
+        let export = typ.export.clone();
+        let container = NamedTypeContainer::new(typ);
+
+        if let Some(name) = export {
+            ensure!(!self.exports.contains_key(&name),
+                    "duplicate export '{}'", name);
+            self.exports.insert(name, container.clone());
+        }
+
+        self.types.push(container);
         Ok(())
     }
 

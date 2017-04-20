@@ -3,6 +3,7 @@ use ::ir::spec::{Type, TypeVariant, TypeData, WeakTypeContainer, TypeContainer, 
 use ::ir::spec::data::SpecReferenceHandle;
 use ::ir::spec::variant::{Variant, VariantType};
 use ::ir::spec::reference::Reference;
+use ::ir::name::Name;
 use ::ir::type_spec::WeakTypeSpecContainer;
 use ::ir::compilation_unit::{TypePath, NamedTypeContainer, TypeKind};
 use ::errors::*;
