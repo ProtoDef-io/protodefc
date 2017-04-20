@@ -47,21 +47,18 @@ fn main() {
                 writeln!(stderr, "").expect(errmsg);
 
                 writeln!(stderr, "traceback (most recent call last):").expect(errmsg);
-                writeln!(stderr, "error: {}", e).expect(errmsg);
-
-                for e in e.iter().skip(1) {
-                    writeln!(stderr, "caused by: {}", e).expect(errmsg);
+                for e in e.iter() {
+                    writeln!(stderr, "- {}", e).expect(errmsg);
                 }
 
                 writeln!(stderr, "").expect(errmsg);
 
                 if let Some(backtrace) = e.backtrace() {
                     writeln!(stderr, "{:?}", backtrace).expect(errmsg);
+                    writeln!(stderr, "").expect(errmsg);
                 } else {
                     writeln!(stderr, "Run with RUST_BACKTRACE=1 to get backtrace.").expect(errmsg);
                 }
-
-                writeln!(stderr, "").expect(errmsg);
 
                 writeln!(stderr, "Compilation failed.").expect(errmsg);
                 ::std::process::exit(1);

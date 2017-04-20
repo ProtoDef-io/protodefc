@@ -38,7 +38,7 @@ impl Name {
         ensure!(re.is_match(&string),
                 "name is not valid, got {:?}", string);
         ensure!(cases::snakecase::is_snake_case(&string),
-                "name must be snake-cased, got {:?}", string);
+                "name must be snake_cased, got {:?}", string);
 
         Ok(Name {
             camel: cases::camelcase::to_camel_case(&string),
