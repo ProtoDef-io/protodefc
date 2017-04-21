@@ -35,17 +35,24 @@ impl TypeVariant for ContainerVariant {
                        -> Result<()> {
         match *pass {
             CompilePass::MakeTypeSpecs => {
-                data.type_spec = Some(TypeSpecVariant::Container(ContainerSpec {
-                    name: Name::new("placeholder".to_owned())?, // TODO
-                    fields: self.fields.iter().map(|f| {
-                        let child_rc = f.child.clone().upgrade();
-                        let child = child_rc.borrow();
-                        ContainerFieldSpec {
-                            name: f.name.clone().into(),
-                            type_spec: child.data.type_spec.clone().unwrap(),
-                        }
-                    }).collect(),
-                }).into());
+                if self.virt {
+                    let child_rc = self.fields.iter().find(|f| f.field_type.is_normal()).unwrap()
+                        .child.clone().upgrade();
+                    let child = child_rc.borrow();
+                    data.type_spec = Some(child.data.type_spec.clone().unwrap());
+                } else {
+                    data.type_spec = Some(TypeSpecVariant::Container(ContainerSpec {
+                        name: Name::new("placeholder".to_owned())?, // TODO
+                        fields: self.fields.iter().map(|f| {
+                            let child_rc = f.child.clone().upgrade();
+                            let child = child_rc.borrow();
+                            ContainerFieldSpec {
+                                name: f.name.clone().into(),
+                                type_spec: child.data.type_spec.clone().unwrap(),
+                            }
+                        }).collect(),
+                    }).into());
+                }
                 Ok(())
             }
             CompilePass::GenerateFieldAccessOrder => {
@@ -83,6 +90,17 @@ pub enum ContainerFieldType {
         reference: Reference,
         reference_handle: SpecReferenceHandle,
     },
+}
+
+impl ContainerFieldType {
+
+    fn is_normal(&self) -> bool {
+        match *self {
+            ContainerFieldType::Normal => true,
+            _ => false,
+        }
+    }
+
 }
 
 pub struct ContainerVariantBuilder {

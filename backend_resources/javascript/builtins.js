@@ -98,4 +98,9 @@
             return [buffer.toString('utf8', offset, offset+size), offset+size];
         },
     },
+    "::unit": {
+        size_of: function(input) { return 0; },
+        serialize: function(input, buffer, offset) { return offset; },
+        deserialize: function(buffer, offset) { return [null, offset] },
+    },
 }

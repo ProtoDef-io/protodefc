@@ -13,6 +13,7 @@ use std::fmt;
 use ::ir::compilation_unit::{TypePath, NamedTypeContainer};
 use ::ir::type_spec::{TypeSpecContainer, BinaryEncoding};
 use ::ir::name::Name;
+use ::ir::type_spec::literal::TypeSpecLiteral;
 
 #[derive(Debug)]
 pub struct Block(pub Vec<Operation>);
@@ -62,20 +63,28 @@ pub enum Operation {
 
 #[derive(Debug)]
 pub enum ControlFlowVariant {
+    MatchValue {
+        value_type: TypeSpecContainer,
+        cases: Vec<MatchCase>,
+        default: (Option<Var>, Block),
+    },
     MatchUnionTag {
         enum_type: TypeSpecContainer,
         cases: Vec<UnionTagCase>,
         default: (Option<Var>, Block),
-    },
-    MatchLiteral {
-        cases: Vec<LiteralCase>,
-        default: Block,
     },
     ForEachArray {
         loop_index_var: Var,
         loop_value_var: Var,
         inner: Block,
     },
+}
+
+#[derive(Debug)]
+pub struct MatchCase {
+    pub match_value: TypeSpecLiteral,
+    pub inner_value_var: Option<Var>,
+    pub block: Block,
 }
 
 #[derive(Debug)]

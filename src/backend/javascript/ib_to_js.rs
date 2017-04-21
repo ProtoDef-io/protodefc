@@ -1,4 +1,6 @@
 use super::builder::{Block, Expr};
+use ::ir::type_spec::{TypeSpecContainer, TypeSpecVariant, BinarySpec, BinaryEncoding};
+use ::ir::type_spec::literal::{TypeSpecLiteral, TypeSpecLiteralVariant};
 use ::backend::imperative_base as ib;
 use ::errors::*;
 use itertools::Itertools;
@@ -81,29 +83,10 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                 );
             },
             ib::Operation::ControlFlow { ref input_var,
-                                         variant: ib::ControlFlowVariant::MatchLiteral {
-                                             ref cases, ref default } } => {
-                let mut cases: Vec<(Expr, Block)> = cases.iter()
-                    .map(|&ib::LiteralCase { ref value, ref block }| {
-                        build_block(block).map(|ib| {
-                            (
-                                format!("case {}",
-                                        build_literal(value).0).into(),
-                                ib
-                            )
-                        })
-                    })
-                    .collect::<Result<_>>()?;
-
-                cases.push((
-                    format!("default").into(),
-                    build_block(default)?,
-                ));
-
-                b.switch(
-                    format!("{}", input_var).into(),
-                    cases
-                );
+                                         variant: ib::ControlFlowVariant::MatchValue {
+                                             ref value_type, ref cases,
+                                             ref default } } => {
+                build_control_flow(input_var, value_type, cases, default, &mut b)?;
             }
             ib::Operation::Construct { ref output_var,
                                        variant: ib::ConstructVariant::Container {
@@ -168,6 +151,83 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
     Ok(b)
 }
 
+fn build_control_flow(input_var: &ib::Var, value_type: &TypeSpecContainer,
+                      cases: &Vec<ib::MatchCase>,
+                      default: &(Option<ib::Var>, ib::Block),
+                      b: &mut Block) -> Result<()> {
+    let value_type_rc = value_type.clone().follow();
+    let value_type_inner = value_type_rc.borrow();
+
+    match value_type_inner.variant {
+        TypeSpecVariant::Integer(_)
+            | TypeSpecVariant::Binary(BinarySpec { encoding: BinaryEncoding::Utf8 })
+            | TypeSpecVariant::Boolean => {
+
+            let mut cases: Vec<(Expr, Block)> = cases.iter()
+                .map(|&ib::MatchCase { ref match_value, ref block, .. }| {
+                    build_block(block).map(|ib| {
+                        (
+                            format!("case {}",
+                                    build_literal(match_value).0).into(),
+                            ib
+                        )
+                    })
+                })
+                .collect::<Result<_>>()?;
+
+            cases.push((
+                format!("default").into(),
+                build_block(&default.1)?,
+            ));
+
+            b.switch(
+                format!("{}", input_var).into(),
+                cases
+            );
+        }
+        TypeSpecVariant::Enum(_) => {
+            let mut cases: Vec<(Expr, Block)> = cases.iter()
+                .map(|&ib::MatchCase { ref match_value, ref block,
+                                       ref inner_value_var }| {
+                    build_block(block).map(|ib| {
+                        let mut iib = Block::new();
+
+                        if let &Some(ref variant_var_inner) = inner_value_var {
+                            iib.var_assign(
+                                variant_var_inner.string(),
+                                format!("{}.data", input_var).into()
+                            );
+                        }
+                        iib.block(ib);
+
+                        (format!("case {}", build_literal(match_value).0).into(), iib)
+                    })
+                }).collect::<Result<_>>()?;
+
+            let mut default_block = Block::new();
+            if let Some(ref variant_var_inner) = default.0 {
+                default_block.var_assign(
+                    variant_var_inner.string(),
+                    format!("{}.data", input_var).into()
+                );
+            }
+            default_block.block(build_block(&default.1)?);
+            cases.push((
+                format!("default").into(),
+                default_block,
+            ));
+
+            b.switch(
+                format!("{}.tag", input_var).into(),
+                cases
+            );
+        }
+        ref i => panic!("{:?}", i),
+    }
+
+    Ok(())
+}
+
 fn call_for(typ: &ib::CallType, type_id: u64, input: &str, arguments: &[ib::Var]) -> String {
     let arguments_str = if arguments.len() > 0 {
         format!(", {}", arguments.iter().join(", "))
@@ -204,8 +264,15 @@ fn build_expr(expr: &ib::Expr) -> Result<Expr> {
     Ok(res.into())
 }
 
-fn build_literal(lit: &ib::Literal) -> Expr{
-    match lit {
-        &ib::Literal::Number(ref val) => val.to_owned().into(),
+fn build_literal(lit: &TypeSpecLiteral) -> Expr {
+    match lit.variant {
+        TypeSpecLiteralVariant::Integer { ref data } => format!("{}", data).into(),
+        TypeSpecLiteralVariant::EnumTag { ref enum_variant } =>
+            format!("\"{}\"", enum_variant.name.snake()).into(),
+        TypeSpecLiteralVariant::Boolean { ref data } => format!("{}", data).into(),
+        // TODO
+        TypeSpecLiteralVariant::Binary { ref data } =>
+            format!("\"{}\"", ::std::str::from_utf8(data).unwrap()).into(),
+        _ => unimplemented!(),
     }
 }

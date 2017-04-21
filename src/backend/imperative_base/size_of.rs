@@ -23,7 +23,8 @@ impl BaseSizeOf for SimpleScalarVariant {
         let mut ops: Vec<Operation> = Vec::new();
 
         let arguments = self.arguments.iter()
-            .filter(|arg| data.get_reference_data(arg.handle.unwrap()).access_time == ReferenceAccessTime::ReadWrite)
+            .filter(|arg| data.get_reference_data(arg.handle.unwrap())
+                    .access_time == ReferenceAccessTime::ReadWrite)
             .enumerate()
             .map(|(idx, arg)| {
                 let arg_var = format!("arg_{}", idx);

@@ -1,15 +1,19 @@
 use ::num_bigint as bigint;
 use ::errors::*;
 use ::ir::name::Name;
-use super::{TypeSpecContainer, TypeSpecVariant, IntegerSpec, IntegerSize, BinarySpec};
+use super::{TypeSpecContainer, TypeSpecVariant, IntegerSpec, IntegerSize, BinarySpec,
+            EnumSpec};
+use ::ir::type_spec::EnumVariantSpec;
 
-#[derive(Debug)]
+// TODO: Don't copy this around
+
+#[derive(Debug, Clone)]
 pub struct TypeSpecLiteral {
     pub type_spec: TypeSpecContainer,
     pub variant: TypeSpecLiteralVariant,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TypeSpecLiteralVariant {
     Binary {
         data: Vec<u8>,
@@ -18,7 +22,7 @@ pub enum TypeSpecLiteralVariant {
         data: bigint::BigInt,
     },
     EnumTag {
-        name: Name,
+        enum_variant: EnumVariantSpec,
     },
     Boolean {
         data: bool,
@@ -26,6 +30,29 @@ pub enum TypeSpecLiteralVariant {
 }
 
 impl TypeSpecLiteral {
+
+    pub fn enum_tag(enum_: TypeSpecContainer, name: Name) -> Result<TypeSpecLiteral> {
+        let enum_inner = enum_.borrow();
+
+        let ret = match enum_inner.variant {
+            TypeSpecVariant::Enum(ref enum_spec) => {
+                let variant = enum_spec.variants.iter()
+                    .find(|variant| variant.name == name)
+                    .ok_or_else(|| format!("{:?} is not a valid variant in enum {:?}",
+                                           name.snake(), enum_spec.name.snake()))?;
+
+                TypeSpecLiteral {
+                    type_spec: enum_.clone(),
+                    variant: TypeSpecLiteralVariant::EnumTag {
+                        enum_variant: variant.clone(),
+                    },
+                }
+            }
+            _ => bail!("cannot match enum tag on non-enum type spec"),
+        };
+
+        Ok(ret)
+    }
 
     pub fn parse(type_spec: &TypeSpecContainer, input: &str) -> Result<TypeSpecLiteral> {
         let type_spec_inner = type_spec.borrow();
@@ -37,7 +64,10 @@ impl TypeSpecLiteral {
                 parse_boolean(input)?,
             TypeSpecVariant::Binary(ref data) =>
                 parse_binary(data, input)?,
-            _ => bail!("type does not support literals"),
+            TypeSpecVariant::Enum(_) =>
+                return TypeSpecLiteral::enum_tag(type_spec.clone(),
+                                                 Name::new(input.to_owned())?),
+            _ => bail!("type {:?} does not support literals", type_spec),
         };
 
         Ok(TypeSpecLiteral {

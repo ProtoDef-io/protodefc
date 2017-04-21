@@ -70,8 +70,9 @@ fn do_run(typ: &TypeContainer, parents: &mut Vec<WeakTypeContainer>,
     parents.push(typ.downgrade());
     for reference_data in &mut references {
         let up = reference_data.reference.up();
-        if up > parents.len() {
-            bail!(chain);
+        if up > parents.len()-1 {
+            let err: Result<()> = Err("reference goes above root of type".into());
+            return err.chain_err(|| chain.clone());
         }
 
         let root = parents[(parents.len() - 1) - up].clone();
@@ -143,17 +144,25 @@ fn resolve_item(item: &ReferenceItem, path_entries: &mut Vec<ReferencePathEntryD
                 type_spec: current_type.downgrade(),
             });
 
-            type_next = current_type.borrow().variant
-                .get_child_name(name)
-                .ok_or_else(|| format!("type has no field '{}'", name.snake()))?
-            .follow();
-
             if let Some(ref current_node_inner_rc) = current_node {
                 let node_inner = current_node_inner_rc.borrow();
                 node_next = node_inner.variant.to_variant()
                     .resolve_child_name(&node_inner.data, name)
                     .ok().map(|i| i.upgrade());
+                if let Some(ref inner) = node_next {
+                    type_next = inner.borrow().data.type_spec
+                        .clone().unwrap().follow();
+                } else {
+                    type_next = current_type.borrow().variant
+                        .get_child_name(name)
+                        .ok_or_else(|| format!("type has no field '{}'", name.snake()))?
+                    .follow();
+                }
             } else {
+                type_next = current_type.borrow().variant
+                    .get_child_name(name)
+                    .ok_or_else(|| format!("type has no field '{}'", name.snake()))?
+                .follow();
                 node_next = None;
             }
 

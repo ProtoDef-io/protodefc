@@ -133,7 +133,7 @@ impl BaseDeserialize for UnionVariant {
 
         let out_var = output_for(data);
 
-        let cases: Result<Vec<LiteralCase>> = self.cases.iter()
+        let cases: Vec<MatchCase> = self.cases.iter()
             .map(|case| {
                 let child_rc = case.child.upgrade();
                 let mut i_ops: Vec<Operation> = Vec::new();
@@ -149,13 +149,14 @@ impl BaseDeserialize for UnionVariant {
                         },
                     });
 
-                    LiteralCase {
-                        value: Literal::Number(case.match_val_str.clone()),
+                    MatchCase {
+                        match_value: case.match_val.clone().unwrap(),
+                        inner_value_var: None,
                         block: Block(i_ops),
                     }
                 })
             })
-            .collect();
+            .collect::<Result<_>>()?;
 
         let mut default_ops = Vec::new();
         if let Some(ref case) = self.default_case {
@@ -175,9 +176,11 @@ impl BaseDeserialize for UnionVariant {
 
         ops.push(Operation::ControlFlow {
             input_var: tag_var.into(),
-            variant: ControlFlowVariant::MatchLiteral {
-                cases: cases?,
-                default: Block(default_ops),
+            variant: ControlFlowVariant::MatchValue {
+                cases: cases,
+                default: (None, Block(default_ops)),
+                value_type: data.get_reference_data(self.match_target_handle)
+                    .target_type_spec.clone().unwrap(),
             },
         });
 

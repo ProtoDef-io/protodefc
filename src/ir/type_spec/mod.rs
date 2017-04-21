@@ -50,7 +50,7 @@ pub struct EnumSpec {
     pub name: Name,
     pub variants: Vec<EnumVariantSpec>,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EnumVariantSpec {
     pub name: Name,
     pub type_spec: TypeSpecContainer,

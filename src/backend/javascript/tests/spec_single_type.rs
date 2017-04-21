@@ -179,6 +179,38 @@ def("test") => container(virtual: "true") {
     );
 }
 
+#[test]
+fn match_enum() {
+    let spec = r#"
+@type integer("u8")
+def_native("u8");
+
+def_native("unit");
+
+@export "test"
+def("test") => container {
+    virtual_field("marker_union_tag", value: "marker_tag/@tag") => u8;
+    field("marker_tag") => union("marker_union", tag: "../marker_union_tag") {
+        variant("v_one", match: "0") => unit;
+        variant("v_two", match: "1") => unit;
+    };
+    field("thing") => union("thing_union", tag: "../marker_tag") {
+        variant("one", match: "v_one") => u8;
+        variant("two", match: "v_two") => container {
+            field("foo") => u8;
+            field("bar") => u8;
+        };
+    };
+};
+"#;
+
+    test_single(
+        spec,
+        "{marker_tag: {tag: \"v_one\", data: null}, thing: {tag: \"one\", data: 12}}",
+        &[0, 12]
+    );
+}
+
 //#[test]
 //fn protodef_spec_tests() {
 //    for case in ::test_harness::json_spec_cases() {
