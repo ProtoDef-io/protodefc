@@ -34,8 +34,11 @@ pub fn is_name_char(c: char) -> bool {
 impl Name {
 
     pub fn new(string: String) -> Result<Name> {
-        let re = ::regex::Regex::new(r"^[a-z][a-zA-Z0-9_]*$").unwrap();
-        ensure!(re.is_match(&string),
+        lazy_static! {
+            static ref RE: ::regex::Regex =
+                Regex::new(r"^[a-z][a-zA-Z0-9_]*$").unwrap();
+        }
+        ensure!(RE.is_match(&string),
                 "name is not valid, got {:?}", string);
         ensure!(cases::snakecase::is_snake_case(&string),
                 "name must be snake_cased, got {:?}", string);

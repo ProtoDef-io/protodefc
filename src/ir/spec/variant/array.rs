@@ -45,7 +45,6 @@ impl TypeVariant for ArrayVariant {
                 let type_spec_rc = data.get_reference_data(self.count_handle)
                     .target_type_spec.clone().unwrap().follow();
                 let type_spec = type_spec_rc.borrow();
-                println!("{:?}", type_spec);
 
                 ensure!(type_spec.variant.is_integer(),
                         "array length property must be integer");
