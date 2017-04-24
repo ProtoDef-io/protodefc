@@ -1,0 +1,76 @@
+use super::super::{Ident, Item, ItemArg, Block, Statement, Value};
+
+pub root -> Block
+    = __ stmts:statement* { Block { statements: stmts } }
+
+statement -> Statement
+    = attrs:statementAttr* items:valueChain semicolon {
+          let mut a = attrs;
+          let out = a.drain(..).collect();
+          Statement {
+              attributes: out,
+              items: items,
+          }
+      }
+statementAttr -> (String, Vec<Value>)
+    = "@" name:baseIdent val:valueChain { (name, val) }
+
+valueChain -> Vec<Value>
+    = value ++ hashrocket
+
+value -> Value
+    = s:string { Value::String { is_block: false, string: s } }
+    / i:item { Value::Item(i) }
+
+item -> Item
+    = ident:identifier args:itemArgs? block:itemBlock? {
+          Item {
+              name: ident,
+              args: args.unwrap_or_else(|| vec![]),
+              block: block.unwrap_or_else(|| Block { statements: vec![] }),
+          }
+      }
+itemArgs -> Vec<ItemArg>
+    = parenOpen args:(itemArg ** comma) parenClose __ { args }
+itemArg -> ItemArg
+    = tag:(t:baseIdent ":" {t})? __ val:value __ { ItemArg { tag: tag, value: val } }
+itemBlock -> Block
+    = blockOpen s:statement* blockClose __ { Block { statements: s } }
+
+string -> String
+    = #quiet<'"' chars:stringChar* '"' __ { chars.into_iter().collect() }>
+    / #expected("string")
+stringChar -> char
+    = !'"' c:$. { c.chars().next().unwrap() }
+
+pub identifier -> Ident
+    = #quiet<i:innerIdentifier { i }>
+    / #expected("namespaced identifier")
+innerIdentifier -> Ident
+    = "::" idents:(baseIdent ++ "::") __ { Ident::RootNs(idents) }
+    / ident:baseIdent __ { Ident::Simple(ident) }
+baseIdent -> String
+    = #quiet<chars:$([0-9a-zA-Z_]+) __ { chars.to_owned()}>
+    / #expected("identifier")
+
+// Tokens
+
+parenOpen = "(" __
+parenClose = ")" __
+blockOpen = "{" __
+blockClose = "}" __
+comma = "," __
+semicolon = ";" __
+hashrocket = "=>" __
+
+// Basic
+
+__ = #quiet<(whitespace / eol)*>
+
+whitespace
+    = [ \t\u{00A0}\u{FEFF}\u{1680}\u{180E}\u{2000}-\u{200A}\u{202F}\u{205F}\u{3000}]
+eolChar
+    = [\n\r]
+eol
+    = "\n"
+    / "\r\n"

@@ -14,6 +14,7 @@ extern crate matches;
 extern crate regex;
 extern crate inflector;
 extern crate num_bigint;
+extern crate unicode_segmentation;
 
 pub mod ir;
 pub mod backend;
