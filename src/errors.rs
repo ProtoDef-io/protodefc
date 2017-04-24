@@ -19,6 +19,11 @@ error_chain! {
             description("error under compilation")
                 display("{}", t.display())
         }
+        PdsParseError(t: ::frontend::protocol_spec::ast::parser::ParseError) {
+            description("pds parse error")
+                display("parse error at {}:{}, expected one of {:?}",
+                        t.line, t.column, t.expected)
+        }
     }
 }
 

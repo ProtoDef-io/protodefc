@@ -3,10 +3,8 @@ use ::errors::*;
 use itertools::Itertools;
 
 pub fn parse(input: &str) -> Result<Block> {
-    match pds::root(input) {
-        Ok(i) => Ok(i),
-        Err(err) => bail!("parse error at {}:{}", err.line, err.column),
-    }
+    pds::root(input)
+        .map_err(|e| ErrorKind::PdsParseError(e).into())
 }
 
 pub fn parse_ident(input: &str) -> Result<Ident> {
@@ -33,6 +31,7 @@ fn format_error(input: &str, error: pds::ParseError) -> String {
     format!("{}\n{}{}", lines_f, pointer_padding, pointer)
 }
 
+pub use self::pds::ParseError;
 mod pds {
     include!(concat!(env!("OUT_DIR"), "/pds.rs"));
 }
