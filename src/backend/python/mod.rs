@@ -8,7 +8,7 @@ use ::errors::*;
 
 use self::builder::ToPython;
 
-pub fn compilation_unit_to_python(cu: &CompilationUnit) -> Result<String> {
+pub fn compile(cu: &CompilationUnit) -> Result<String> {
     let block = cu_to_py::generate_compilation_unit(cu)?;
     let mut out = String::new();
     block.to_python(&mut out, 0);

@@ -7,6 +7,8 @@ extern crate clap;
 use std::fs::File;
 use std::io::{Read, Write};
 
+use protodefc::backend::Backend;
+
 arg_enum! {
     #[derive(Debug)]
     pub enum CompileTarget {
@@ -90,20 +92,12 @@ fn run(matches: &clap::ArgMatches) -> Result<()> {
 
         let cu = protodefc::spec_to_final_compilation_unit(&input_str)?;
 
-        let out = match target {
-            CompileTarget::Javascript =>
-                protodefc::backend::javascript::compilation_unit_to_javascript(&cu)?,
-            CompileTarget::Rust =>
-                protodefc::backend::rust::compilation_unit_to_rust(&cu)?,
-            CompileTarget::Python =>
-                protodefc::backend::python::compilation_unit_to_python(&cu)?,
-            CompileTarget::JsonSpec =>
-                protodefc::backend::json_spec::compilation_unit_to_json_spec(&cu)?,
-        };
+        let backend: Backend = target.into();
+
+        let out = backend(&cu)?;
 
         let mut output_file = File::create(output_file).unwrap();
         output_file.write(out.as_bytes()).unwrap();
-
     }
 
     if let Some(ref matches) = matches.subcommand_matches("old_protodef_to_pds") {
@@ -123,4 +117,16 @@ fn run(matches: &clap::ArgMatches) -> Result<()> {
     }
 
     Ok(())
+}
+
+impl Into<Backend> for CompileTarget {
+    fn into(self) -> Backend {
+        use protodefc::backend;
+        match self {
+            Javascript => backend::javascript::compile,
+            Rust => backend::rust::compile,
+            Python => backend::python::compile,
+            JsonSpec => backend::json_spec::compile,
+        }
+    }
 }
