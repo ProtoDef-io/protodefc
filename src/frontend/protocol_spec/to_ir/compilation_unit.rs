@@ -40,10 +40,16 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
     for stmt in &block.statements {
         let head_item = stmt.items[0].item()
             .ok_or("statement in root must start with item")?;
-        println!("{:?}", head_item.name);
         let head_item_name = head_item.name
             .simple_str()
             .ok_or("statement in root must start with non-namespaced item")?;
+
+        let docstring = sequence(
+            stmt.attributes.get("doc")
+                .map(|i| i[0].string()
+                     .map(|i| i.to_owned())
+                     .ok_or("doc attribute must be string".into()))
+        )?.unwrap_or_else(|| String::new());
 
         match head_item_name.as_ref() {
             "def" => {
@@ -74,6 +80,7 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
                     type_spec: TypeSpecVariant::Referenced(None).into(),
                     export: export,
                     arguments: vec![],
+                    docstring: docstring,
                 })?;
             }
             "def_native" => {
@@ -105,6 +112,7 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
                     type_spec: TypeSpecVariant::Referenced(None).into(),
                     arguments: super::native_type::block_to_args(&head_item.block)?,
                     export: None,
+                    docstring: docstring,
                 })?;
             }
             "namespace" => {

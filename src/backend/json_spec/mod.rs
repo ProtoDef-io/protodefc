@@ -28,6 +28,7 @@ fn ns_type_to_json(typ: &NamedTypeContainer) -> Result<Value> {
     Ok(json!({
         "name": &inner.path.name,
         "path": ns_path_to_json(&inner.path.path)?,
+        "doc": inner.docstring,
         "spec": match inner.typ {
             TypeKind::Native(ref native) => {
                 json!({
@@ -46,7 +47,46 @@ fn ns_type_to_json(typ: &NamedTypeContainer) -> Result<Value> {
 
 fn spec_to_json(typ: &TypeContainer) -> Result<Value> {
     let inner = typ.borrow();
-    Ok(json!({}))
+
+    match inner.variant {
+        Variant::Container(ref variant) => {
+            Ok(json!({
+                "kind": "container",
+                "fields": variant.fields.iter().map(|field| {
+                    Ok(json!({
+                        "name": field.name.snake(),
+                        "doc": "",
+                        "spec": spec_to_json(&field.child.upgrade())?,
+                    }))
+                }).collect::<Result<Vec<Value>>>()?,
+            }))
+        }
+        Variant::Union(ref variant) => {
+            Ok(json!({
+                "kind": "union",
+                "name": variant.union_name.snake(),
+                "cases": variant.cases.iter().map(|case| {
+                    Ok(json!({
+                        "name": case.case_name.snake(),
+                        "doc": "",
+                        "spec": spec_to_json(&case.child.upgrade())?,
+                    }))
+                }).collect::<Result<Vec<Value>>>()?,
+                // TODO default case
+            }))
+        }
+        Variant::Array(ref variant) => {
+            Ok(json!({
+                "kind": "array",
+            }))
+        }
+        Variant::SimpleScalar(ref variant) => {
+            Ok(json!({
+                "kind": "terminal",
+                "path": typ_path_to_json(&variant.path.clone().unwrap())?,
+            }))
+        }
+    }
 }
 
 fn typ_path_to_json(typ_path: &TypePath) -> Result<Value> {

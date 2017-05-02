@@ -30,11 +30,16 @@ pub struct CompilationUnitNS {
 #[derive(Debug)]
 pub struct NamedType {
     pub path: TypePath,
+
     pub typ: TypeKind,
     pub type_spec: TypeSpecContainer,
     pub type_id: u64,
+
     pub arguments: Vec<NamedTypeArgument>,
+
     pub export: Option<String>,
+
+    pub docstring: String,
 }
 
 #[derive(Debug, Clone)]

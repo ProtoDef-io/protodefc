@@ -149,7 +149,6 @@ impl RelativeNSPath {
 
     // TODO
     pub fn simple_str<'a>(&'a self) -> Option<&'a str> {
-        println!("{:?}", self);
         match *self {
             RelativeNSPath::Absolute(_) => None,
                 //bail!("absolute path cannot be used as simple string"),
