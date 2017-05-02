@@ -5,8 +5,9 @@ use ::ir::spec::{TypeContainer};
 use ::ir::spec::variant::Variant;
 use ::serde_json::{Value, to_value};
 
-pub fn compilation_unit_to_json_spec(cu: &CompilationUnit) -> Result<String> {
-    Ok(format!("{:#}", json!({
+pub fn compile(cu: &CompilationUnit) -> Result<String> {
+    Ok(format!("{:#}",
+               json!({
         "namespaces": cu.namespaces.iter()
             .map(|ns| ns_to_json(ns))
             .collect::<Result<Vec<Value>>>()?,
