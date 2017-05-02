@@ -123,10 +123,10 @@ impl Into<Backend> for CompileTarget {
     fn into(self) -> Backend {
         use protodefc::backend;
         match self {
-            Javascript => backend::javascript::compile,
-            Rust => backend::rust::compile,
-            Python => backend::python::compile,
-            JsonSpec => backend::json_spec::compile,
+            CompileTarget::Javascript => backend::javascript::compile,
+            CompileTarget::Rust => backend::rust::compile,
+            CompileTarget::Python => backend::python::compile,
+            CompileTarget::JsonSpec => backend::json_spec::compile,
         }
     }
 }
