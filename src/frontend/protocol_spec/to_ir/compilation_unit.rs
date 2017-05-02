@@ -40,6 +40,7 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
     for stmt in &block.statements {
         let head_item = stmt.items[0].item()
             .ok_or("statement in root must start with item")?;
+
         let head_item_name = head_item.name
             .simple_str()
             .ok_or("statement in root must start with non-namespaced item")?;

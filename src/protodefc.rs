@@ -80,24 +80,21 @@ fn main() {
 
 fn run(matches: &clap::ArgMatches) -> Result<()> {
     if let Some(ref matches) = matches.subcommand_matches("compile") {
-        let target = value_t!(matches, "TARGET", CompileTarget)
-            .unwrap_or_else(|e| e.exit());
+        let backend: Backend = value_t!(matches, "TARGET", CompileTarget)
+            .unwrap_or_else(|e| e.exit()).into();
 
         let input_file = matches.value_of("INPUT").unwrap();
         let output_file = matches.value_of("OUTPUT").unwrap();
 
-        let mut input_file = File::open(input_file).unwrap();
+        let mut input_file = open_input(input_file);
+        let mut output_file = open_output(output_file);
+
         let mut input_str = String::new();
         input_file.read_to_string(&mut input_str).unwrap();
 
         let cu = protodefc::spec_to_final_compilation_unit(&input_str)?;
 
-        let backend: Backend = target.into();
-
-        let out = backend(&cu)?;
-
-        let mut output_file = File::create(output_file).unwrap();
-        output_file.write(out.as_bytes()).unwrap();
+        output_file.write(backend(&cu)?.as_bytes()).unwrap();
     }
 
     if let Some(ref matches) = matches.subcommand_matches("old_protodef_to_pds") {
@@ -117,6 +114,37 @@ fn run(matches: &clap::ArgMatches) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn open_input(name: &str) -> File {
+    #[cfg(any(unix))]
+    {
+        use std::os::unix::io::FromRawFd;
+        if (name == "-") {
+            // NOTE: This is unsafe because File expects that it
+            // is the sole user of this descriptor. Any access to
+            // standard input in other locations could cause issues
+            return unsafe { File::from_raw_fd(0) }
+        }
+    }
+
+    File::open(name).unwrap()
+}
+
+fn open_output(name: &str) -> File {
+    #[cfg(any(unix))]
+    {
+        use std::os::unix::io::FromRawFd;
+        if (name == "-") {
+            // NOTE: This is unsafe because File expects that it
+            // is the sole user of this descriptor. Any access to
+            // standard output in other locations (like println!)
+            // cause issues
+            return unsafe { File::from_raw_fd(1) }
+        }
+    }
+
+    File::create(name).unwrap()
 }
 
 impl Into<Backend> for CompileTarget {
