@@ -86,15 +86,6 @@ fn print_value(value: &Value, out: &mut String, level: u64) {
 }
 
 fn print_ident(ident: &Ident, out: &mut String, _level: u64) {
-    match *ident {
-        Ident::Simple(ref string) => {
-            out.push_str(string);
-        }
-        Ident::RootNs(ref path) => {
-            for node in path {
-                out.push_str("::");
-                out.push_str(node);
-            }
-        }
-    }
+    // TODO
+    out.push_str(&format!("{}", ident))
 }

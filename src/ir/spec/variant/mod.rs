@@ -66,8 +66,8 @@ impl Variant {
             Variant::Container(_) => VariantType::Container,
             Variant::Array(_) => VariantType::Array,
             Variant::Union(_) => VariantType::Union,
-            Variant::SimpleScalar(_) =>
-                VariantType::SimpleScalar(data.name.clone()),
+            Variant::SimpleScalar(ref inner) =>
+                VariantType::SimpleScalar(inner.path.clone().unwrap()),
         }
     }
 

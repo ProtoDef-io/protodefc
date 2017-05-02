@@ -21,16 +21,10 @@ fn type_values_to_ir(items: &[Value]) -> Result<TypeContainer> {
     let item = items[0].item()
         .ok_or("expected type item, got something else")?;
 
-    // TODO
-    match item.name {
-        Ident::Simple(ref s) => {
-            match s.as_str() {
-                "container" => ContainerVariant::values_to_ir(items),
-                "array" => ArrayVariant::values_to_ir(items),
-                "union" => UnionVariant::values_to_ir(items),
-                _ => SimpleScalarVariant::values_to_ir(items),
-            }
-        }
+    match item.name.simple_str() {
+        Some("container") => ContainerVariant::values_to_ir(items),
+        Some("array") => ArrayVariant::values_to_ir(items),
+        Some("union") => UnionVariant::values_to_ir(items),
         _ => SimpleScalarVariant::values_to_ir(items),
     }
 }
@@ -197,7 +191,6 @@ impl ValuesToIr for SimpleScalarVariant {
             })
             .collect::<Result<Vec<(String, Reference)>>>()?;
 
-        let path = scalar_item.name.to_type_path();
-        Ok(SimpleScalarVariant::new(path, arguments))
+        Ok(SimpleScalarVariant::new(scalar_item.name.clone(), arguments))
     }
 }

@@ -1,4 +1,4 @@
-use ::ir::compilation_unit::TypePath;
+use ::ir::compilation_unit::{TypePath, RelativeNSPath, CanonicalNSPath};
 use ::ir::spec::{TypeContainer, WeakTypeContainer};
 use ::ir::spec::reference::Reference;
 use ::ir::type_spec::{TypeSpecContainer, WeakTypeSpecContainer};
@@ -7,8 +7,6 @@ use ::ir::name::Name;
 
 #[derive(Debug)]
 pub struct TypeData {
-    pub name: TypePath,
-
     children: Vec<TypeContainer>,
     pub references: Vec<ReferenceData>,
 
@@ -102,8 +100,6 @@ impl TypeData {
 impl Default for TypeData {
     fn default() -> TypeData {
         TypeData {
-            name: TypePath::with_no_ns("".to_owned()),
-
             children: Vec::new(),
             references: Vec::new(),
 

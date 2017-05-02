@@ -110,7 +110,7 @@ mod tests {
     #[test]
     fn tag_validators() {
         let proper = Item {
-            name: Ident::Simple("".into()),
+            name: Ident::simple("".into()),
             args: vec![
                 test_constr_item_arg!(None),
                 test_constr_item_arg!(None),
@@ -122,7 +122,7 @@ mod tests {
         };
 
         let improper = Item {
-            name: Ident::Simple("".into()),
+            name: Ident::simple("".into()),
             args: vec![
                 test_constr_item_arg!(None),
                 test_constr_item_arg!(Some("foo".into())),
@@ -173,7 +173,7 @@ mod tests {
     #[test]
     fn tag_getters() {
         let proper = Item {
-            name: Ident::Simple("".into()),
+            name: Ident::simple("".into()),
             args: vec![
                 test_constr_item_arg!(None),
                 test_constr_item_arg!(None),

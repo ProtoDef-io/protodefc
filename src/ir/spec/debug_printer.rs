@@ -12,8 +12,6 @@ fn pad_level(fmt: &mut fmt::Formatter, level: u64) -> Result<(), fmt::Error> {
 pub fn print(typ: &Type, fmt: &mut fmt::Formatter, depth: u64) -> Result<(), fmt::Error> {
     pad_level(fmt, depth)?;
     fmt.write_str("Node( ")?;
-    typ.data.name.fmt(fmt)?;
-    fmt.write_str(", ")?;
     typ.variant.fmt(fmt)?;
     if typ.data.get_children().len() == 0 {
         fmt.write_str(" );\n")?;

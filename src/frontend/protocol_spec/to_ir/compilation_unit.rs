@@ -1,7 +1,8 @@
 use ::errors::*;
 use ::ir::IdGenerator;
-use ::ir::compilation_unit::{CompilationUnit, NSPath, CompilationUnitNS, NamedType,
-                             TypePath, TypeKind, NativeType};
+use ::ir::compilation_unit::{CompilationUnit, RelativeNSPath, CanonicalNSPath,
+                             CompilationUnitNS, NamedType, TypePath, TypeKind,
+                             NativeType};
 use ::ir::type_spec::{TypeSpecVariant, IntegerSpec, IntegerSize};
 
 use super::super::ast;
@@ -20,10 +21,11 @@ pub fn to_compilation_unit(input: &str) -> Result<CompilationUnit> {
     let ast = ast::parser::parse(input)?;
 
     let mut id_gen = IdGenerator::new();
-    let mut path = Vec::<String>::new();
     let mut cu = CompilationUnit::new();
 
-    block_to_compilation_unit_ns(&ast, &mut cu, &mut id_gen, &mut path)?;
+    let ns_path = CanonicalNSPath::root();
+
+    block_to_compilation_unit_ns(&ast, &mut cu, &mut id_gen, &ns_path)?;
 
     Ok(cu)
 }
@@ -31,14 +33,14 @@ pub fn to_compilation_unit(input: &str) -> Result<CompilationUnit> {
 fn block_to_compilation_unit_ns(block: &ast::Block,
                                 cu: &mut CompilationUnit,
                                 gen: &mut IdGenerator,
-                                path: &mut Vec<String>)
+                                path: &CanonicalNSPath)
                                 -> Result<()> {
-    let ns_path = NSPath::with_path(path.clone());
-    let mut ns = CompilationUnitNS::new(ns_path.clone());
+    let mut ns = CompilationUnitNS::new(path.clone());
 
     for stmt in &block.statements {
         let head_item = stmt.items[0].item()
             .ok_or("statement in root must start with item")?;
+        println!("{:?}", head_item.name);
         let head_item_name = head_item.name
             .simple_str()
             .ok_or("statement in root must start with non-namespaced item")?;
@@ -64,7 +66,7 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
 
                 ns.add_type(NamedType {
                     path: TypePath {
-                        path: ns_path.clone(),
+                        path: path.clone(),
                         name: name.to_owned(),
                     },
                     typ: TypeKind::Type(typ),
@@ -93,7 +95,7 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
 
                 ns.add_type(NamedType {
                     path: TypePath {
-                        path: ns_path.clone(),
+                        path: path.clone(),
                         name: name.to_owned(),
                     },
                     typ: TypeKind::Native(NativeType {
@@ -116,10 +118,12 @@ fn block_to_compilation_unit_ns(block: &ast::Block,
                     bail!("namespace statement cannot have any children");
                 }
 
-                path.push(name.to_owned());
-                block_to_compilation_unit_ns(&head_item.block, cu, gen, path)
+                let i_path = path
+                    .concat(&::frontend::protocol_spec::ast::parser::parse_ident(&name)?)
+                    .into_canonical()?;
+
+                block_to_compilation_unit_ns(&head_item.block, cu, gen, &i_path)
                     .chain_err(|| format!("inside namespace '{}'", name))?;
-                path.pop();
             }
             name => bail!("'{}' item not allowed in root", name),
         }

@@ -34,7 +34,7 @@ fn switch_to_pds(items: &mut Vec<Value>, arg: &JsonValue) -> Result<()> {
         let mut inner_items = Vec::new();
 
         inner_items.push(Value::Item(Item {
-            name: Ident::Simple("case".to_owned()),
+            name: Ident::simple("case".to_owned()),
             args: vec![ItemArg::new(Value::new_string(key.to_owned()))],
             block: Block::empty(),
         }));
@@ -48,7 +48,7 @@ fn switch_to_pds(items: &mut Vec<Value>, arg: &JsonValue) -> Result<()> {
     }
 
     items.push(Value::Item(Item {
-        name: Ident::Simple("switch".to_owned()),
+        name: Ident::simple("switch".to_owned()),
         args: vec![ItemArg::with_tag("compareTo".to_owned(),
                                      Value::new_string(compare_to.to_owned()))],
         block: block,
@@ -70,7 +70,7 @@ fn array_to_pds(items: &mut Vec<Value>, arg: &JsonValue) -> Result<()> {
                                     Value::new_string(string)))
     }
     items.push(Value::Item(Item {
-        name: Ident::Simple("array".to_owned()),
+        name: Ident::simple("array".to_owned()),
         args: args,
         block: Block::empty(),
     }));
@@ -97,7 +97,7 @@ fn container_to_pds(items: &mut Vec<Value>, arg: &JsonValue) -> Result<()> {
 
         let mut items = vec![
             Value::Item(Item {
-                name: Ident::Simple(item_name.to_owned()),
+                name: Ident::simple(item_name.to_owned()),
                 args: args,
                 block: Block::empty(),
             }),
@@ -112,7 +112,7 @@ fn container_to_pds(items: &mut Vec<Value>, arg: &JsonValue) -> Result<()> {
     }
 
     items.push(Value::Item(Item {
-        name: Ident::Simple("container".into()),
+        name: Ident::simple("container".into()),
         args: vec![],
         block: block,
     }));
@@ -122,7 +122,7 @@ fn container_to_pds(items: &mut Vec<Value>, arg: &JsonValue) -> Result<()> {
 
 fn terminal_to_pds(name: &str, items: &mut Vec<Value>, arg: &JsonValue) -> Result<()> {
     items.push(Value::Item(Item {
-        name: Ident::Simple(name.into()),
+        name: Ident::simple(name.into()),
         args: vec![],
         block: Block::empty(),
     }));

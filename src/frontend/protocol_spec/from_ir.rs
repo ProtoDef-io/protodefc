@@ -10,7 +10,7 @@ fn ir_to_spec(type_name: String, typ: TypeContainer) -> Statement {
     statement.items.insert(
         0,
         Value::Item(Item {
-            name: Ident::Simple("def_type".into()),
+            name: Ident::simple("def_type".into()),
             args: vec![Value::String {
                 string: type_name,
                 is_block: false,
@@ -32,19 +32,20 @@ fn ir_to_spec_inner(typ: TypeContainer) -> Statement {
     match *typ_variant {
 
         Variant::SimpleScalar(_) => {
-            Statement {
-                attributes: HashMap::new(),
-                items: vec![
-                    Value::Item(Item {
-                        name: Ident::RootNs(vec![
-                            "native".into(),
-                            typ_data.name.to_string()
-                        ]),
-                        args: vec![],
-                        block: Block::empty(),
-                    })
-                ],
-            }
+            //Statement {
+            //    attributes: HashMap::new(),
+            //    items: vec![
+            //        Value::Item(Item {
+            //            name: Ident::RootNs(vec![
+            //                "native".into(),
+            //                typ_data.name.to_string()
+            //            ]),
+            //            args: vec![],
+            //            block: Block::empty(),
+            //        })
+            //    ],
+            //}
+            unimplemented!()
         }
 
         Variant::Container(ref inner) => {
@@ -52,7 +53,7 @@ fn ir_to_spec_inner(typ: TypeContainer) -> Statement {
                 attributes: HashMap::new(),
                 items: vec![
                     Value::Item(Item {
-                        name: Ident::Simple("container".into()),
+                        name: Ident::simple("container".into()),
                         args: vec![],
                         block: Block {
                             statements: inner.fields
@@ -64,7 +65,7 @@ fn ir_to_spec_inner(typ: TypeContainer) -> Statement {
                                     statement.items.insert(
                                         0,
                                         Value::Item(Item {
-                                            name: Ident::Simple("field".into()),
+                                            name: Ident::simple("field".into()),
                                             args: vec![Value::String {
                                                 string: field.name.snake().to_owned(),
                                                 is_block: false,

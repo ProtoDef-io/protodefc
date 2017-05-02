@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
 use ::errors::*;
-use ::ir::compilation_unit::TypePath;
+use ::ir::compilation_unit::{TypePath, CanonicalNSPath};
 use ::ir::spec::reference::Reference;
+
+pub use ::ir::compilation_unit::RelativeNSPath as Ident;
 
 pub mod parser;
 pub mod printer;
@@ -39,12 +41,6 @@ pub struct Item {
 pub struct ItemArg {
     pub tag: Option<String>,
     pub value: Value,
-}
-
-#[derive(Debug, Clone)]
-pub enum Ident {
-    Simple(String),
-    RootNs(Vec<String>),
 }
 
 // Helpers
@@ -86,28 +82,6 @@ impl Value {
         Value::String {
             string: string,
             is_block: false,
-        }
-    }
-
-}
-
-impl Ident {
-
-    pub fn simple_str<'a>(&'a self) -> Option<&'a str> {
-        match *self {
-            Ident::Simple(ref string) => Some(string),
-            _ => None,
-        }
-    }
-
-    pub fn to_type_path(&self) -> TypePath {
-        match *self {
-            Ident::Simple(ref string) =>
-                TypePath::with_no_ns(string.to_owned()),
-            Ident::RootNs(ref ns) =>
-                TypePath::with_ns(
-                    ns[..(ns.len()-1)].into(),
-                    ns.last().unwrap().clone())
         }
     }
 

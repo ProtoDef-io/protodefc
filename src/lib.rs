@@ -1,20 +1,16 @@
 #![recursion_limit = "1024"]
 
-#[macro_use]
-extern crate lazy_static;
-#[macro_use]
-extern crate error_chain;
+#[macro_use] extern crate lazy_static;
+#[macro_use] extern crate error_chain;
 extern crate json;
-#[macro_use]
-extern crate nom;
+#[macro_use] extern crate serde_json;
+#[macro_use] extern crate nom;
 extern crate rustache;
 extern crate itertools;
-#[macro_use]
-extern crate matches;
+#[macro_use] extern crate matches;
 extern crate regex;
 extern crate inflector;
 extern crate num_bigint;
-extern crate unicode_segmentation;
 
 pub mod ir;
 pub mod backend;

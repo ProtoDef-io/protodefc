@@ -37,7 +37,7 @@ impl BaseSerialize for SimpleScalarVariant {
         ops.push(Operation::TypeCall {
             input_var: input_for(data).into(),
             call_type: CallType::Serialize,
-            type_name: data.name.clone().into(),
+            type_name: self.path.clone().unwrap().into(),
             named_type: self.target.clone().unwrap(),
             arguments: arguments,
         });

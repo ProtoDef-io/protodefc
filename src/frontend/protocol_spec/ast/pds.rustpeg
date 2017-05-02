@@ -47,8 +47,8 @@ pub identifier -> Ident
     = #quiet<i:innerIdentifier { i }>
     / #expected("namespaced identifier")
 innerIdentifier -> Ident
-    = "::" idents:(baseIdent ++ "::") __ { Ident::RootNs(idents) }
-    / ident:baseIdent __ { Ident::Simple(ident) }
+    = "::" idents:(baseIdent ++ "::") __ { Ident::Absolute(idents) }
+    / idents:(baseIdent ++ "::") __ { Ident::Relative(idents) }
 baseIdent -> String
     = #quiet<chars:$([0-9a-zA-Z_]+) __ { chars.to_owned()}>
     / #expected("identifier")

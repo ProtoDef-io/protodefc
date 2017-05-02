@@ -1,11 +1,13 @@
 use ::ir::TargetType;
-use ::ir::spec::{Type, TypeVariant, TypeData, WeakTypeContainer, TypeContainer, CompilePass};
+use ::ir::spec::{Type, TypeVariant, TypeData, WeakTypeContainer, TypeContainer,
+                 CompilePass};
 use ::ir::spec::data::SpecReferenceHandle;
 use ::ir::spec::variant::{Variant, VariantType};
 use ::ir::spec::reference::Reference;
 use ::ir::name::Name;
 use ::ir::type_spec::WeakTypeSpecContainer;
-use ::ir::compilation_unit::{TypePath, NamedTypeContainer, TypeKind};
+use ::ir::compilation_unit::{TypePath, NamedTypeContainer, TypeKind, RelativeNSPath,
+                             CanonicalNSPath};
 use ::errors::*;
 
 /// This is a simple terminal scalar.
@@ -17,6 +19,9 @@ use ::errors::*;
 /// the type.
 #[derive(Debug)]
 pub struct SimpleScalarVariant {
+    pub relative_path: RelativeNSPath,
+    pub path: Option<TypePath>,
+
     pub target: Option<NamedTypeContainer>,
     pub target_type: Option<TargetType>,
 
@@ -32,7 +37,8 @@ pub struct SimpleScalarArgument {
 
 impl TypeVariant for SimpleScalarVariant {
     fn get_type(&self, data: &TypeData) -> VariantType {
-        VariantType::SimpleScalar(data.name.clone())
+        unimplemented!()
+        //VariantType::SimpleScalar(data.name.clone())
     }
 
     default_resolve_child_name_impl!();
@@ -41,10 +47,14 @@ impl TypeVariant for SimpleScalarVariant {
     fn do_compile_pass(&mut self, data: &mut TypeData, pass: &mut CompilePass)
                        -> Result<()> {
         match *pass {
+            CompilePass::AssignNamespace(ref base_path) => {
+                let full_path = base_path.path
+                    .concat(&self.relative_path).into_type_path()?;
+                self.path = Some(full_path);
+                Ok(())
+            }
             CompilePass::ResolveReferencedTypes(ref path, ref cu) => {
-                let target_resolved = cu.resolve_type(
-                    &data.name.in_context(&path.path))
-                    .chain_err(|| format!("while resolving type of simple_scalar"))?;
+                let target_resolved = cu.resolve_type(self.path.as_ref().unwrap())?;
 
                 {
                     let target_inner = target_resolved.borrow();
@@ -77,14 +87,15 @@ impl TypeVariant for SimpleScalarVariant {
 
 impl SimpleScalarVariant {
 
-    pub fn new(path: TypePath, references: Vec<(String, Reference)>) -> TypeContainer {
+    pub fn new(path: RelativeNSPath,
+               references: Vec<(String, Reference)>) -> TypeContainer {
         SimpleScalarVariant::with_target_type(path, references, None)
     }
 
-    pub fn with_target_type(path: TypePath, mut references: Vec<(String, Reference)>,
+    pub fn with_target_type(path: RelativeNSPath,
+                            mut references: Vec<(String, Reference)>,
                             target_type: Option<TargetType>) -> TypeContainer {
         let mut data = TypeData::default();
-        data.name = path;
 
         let arguments = references.drain(..)
             .map(|(string, reference)| SimpleScalarArgument {
@@ -97,6 +108,8 @@ impl SimpleScalarVariant {
         TypeContainer::new(Type {
             data: data,
             variant: Variant::SimpleScalar(SimpleScalarVariant {
+                relative_path: path,
+                path: None,
                 target: None,
                 target_type: target_type,
                 arguments: arguments,

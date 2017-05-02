@@ -11,7 +11,9 @@ arg_enum! {
     #[derive(Debug)]
     pub enum CompileTarget {
         Javascript,
-        Rust
+        Rust,
+        Python,
+        JsonSpec
     }
 }
 
@@ -93,6 +95,10 @@ fn run(matches: &clap::ArgMatches) -> Result<()> {
                 protodefc::backend::javascript::compilation_unit_to_javascript(&cu)?,
             CompileTarget::Rust =>
                 protodefc::backend::rust::compilation_unit_to_rust(&cu)?,
+            CompileTarget::Python =>
+                protodefc::backend::python::compilation_unit_to_python(&cu)?,
+            CompileTarget::JsonSpec =>
+                protodefc::backend::json_spec::compilation_unit_to_json_spec(&cu)?,
         };
 
         let mut output_file = File::create(output_file).unwrap();

@@ -4,12 +4,12 @@ use super::FromProtocolJson;
 use ::json::JsonValue;
 use ::errors::*;
 use super::super::type_from_json;
-use ::ir::compilation_unit::TypePath;
+use ::ir::compilation_unit::{TypePath, RelativeNSPath};
 use ::ir::spec::reference::Reference;
 
 pub struct ContainerReader;
 impl FromProtocolJson for ContainerReader {
-    fn from_json(_name: TypePath, arg: &JsonValue) -> Result<TypeContainer> {
+    fn from_json(_name: RelativeNSPath, arg: &JsonValue) -> Result<TypeContainer> {
         let is_virtual = arg["container_type"] == "virtual";
         let mut builder = ContainerVariantBuilder::new(is_virtual);
 

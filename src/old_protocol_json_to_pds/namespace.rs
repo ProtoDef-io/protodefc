@@ -23,7 +23,7 @@ fn namespace_to_pds_inner(block: &mut Block, path: &mut Vec<String>, json: &Json
         let name = if is_native { "def_native" } else { "def" };
         let mut items = vec![
             Value::Item(Item{
-                name: Ident::Simple(name.into()),
+                name: Ident::simple(name.into()),
                 args: vec![
                     ItemArg::new(Value::new_string(key.to_owned())),
                 ],
@@ -47,7 +47,7 @@ fn namespace_to_pds_inner(block: &mut Block, path: &mut Vec<String>, json: &Json
             attributes: HashMap::new(),
             items: vec![
                 Value::Item(Item{
-                    name: Ident::Simple("namespace".into()),
+                    name: Ident::simple("namespace".into()),
                     args: vec![
                         ItemArg::new(Value::new_string(path_str)),
                     ],

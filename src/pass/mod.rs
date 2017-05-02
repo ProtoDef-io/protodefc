@@ -3,6 +3,7 @@ use ::ir::compilation_unit::CompilationUnit;
 
 pub use ::errors::*;
 
+pub mod assign_namespace;
 pub mod assign_parent;
 pub mod assign_ident;
 pub mod resolve_reference;
@@ -18,6 +19,8 @@ pub mod validate_types;
 
 pub fn run_passes(cu: &mut CompilationUnit) -> Result<()> {
     // Compilation process:
+
+    assign_namespace::run(cu)?;
 
     // 1. assign_parent
     // Gives all nodes a weak reference to their parent.

@@ -11,6 +11,9 @@ use ::ir::spec::data::ReferenceAccessTime;
 pub type NamedTypeContainer = Container<NamedType>;
 pub type WeakNamedTypeContainer = WeakContainer<NamedType>;
 
+mod path;
+pub use self::path::{CanonicalNSPath, RelativeNSPath, TypePath};
+
 #[derive(Debug)]
 pub struct CompilationUnit {
     pub namespaces: Vec<CompilationUnitNS>,
@@ -19,7 +22,7 @@ pub struct CompilationUnit {
 
 #[derive(Debug)]
 pub struct CompilationUnitNS {
-    pub path: NSPath,
+    pub path: CanonicalNSPath,
     pub types: Vec<NamedTypeContainer>,
     pub exports: HashMap<String, NamedTypeContainer>,
 }
@@ -49,38 +52,6 @@ pub struct NamedTypeArgument {
     pub name: String,
     pub access_time: ReferenceAccessTime,
     pub type_spec: TypeSpecContainer,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct TypePath {
-    pub path: NSPath,
-    pub name: String,
-}
-impl fmt::Display for TypePath {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", self.path, self.name)
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum NSPath {
-    None,
-    Path(Vec<String>),
-}
-impl fmt::Display for NSPath {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            NSPath::None => write!(f, ""),
-            NSPath::Path(ref path) => {
-                if path.len() == 0 {
-                    write!(f, "::")
-                } else {
-                    let joined: String = path.iter().join("::");
-                    write!(f, "::{}::", joined)
-                }
-            }
-        }
-    }
 }
 
 impl CompilationUnit {
@@ -171,7 +142,7 @@ impl CompilationUnit {
 
 impl CompilationUnitNS {
 
-    pub fn new(path: NSPath) -> CompilationUnitNS {
+    pub fn new(path: CanonicalNSPath) -> CompilationUnitNS {
         CompilationUnitNS {
             path: path,
             types: Vec::new(),
@@ -212,49 +183,6 @@ impl CompilationUnitNS {
             .find(|typ| &typ.borrow().path == path)
             .ok_or(format!("type '{}' not found", path).into())
             .map(|t| t.clone())
-    }
-
-}
-
-impl TypePath {
-
-    pub fn with_ns(path: Vec<String>, name: String) -> TypePath {
-        TypePath {
-            path: NSPath::Path(path),
-            name: name,
-        }
-    }
-
-    pub fn with_no_ns(name: String) -> TypePath {
-        TypePath {
-            path: NSPath::None,
-            name: name,
-        }
-    }
-
-    pub fn in_context(&self, path: &NSPath) -> TypePath {
-        match self.path {
-            NSPath::Path(_) => self.clone(),
-            NSPath::None => match *path {
-                NSPath::None => self.clone(),
-                NSPath::Path(_) => TypePath {
-                    path: path.clone(),
-                    name: self.name.clone(),
-                },
-            },
-        }
-    }
-
-}
-
-impl NSPath {
-
-    pub fn new() -> NSPath {
-        NSPath::None
-    }
-
-    pub fn with_path(path: Vec<String>) -> NSPath {
-        NSPath::Path(path)
     }
 
 }

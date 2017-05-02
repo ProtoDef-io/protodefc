@@ -35,7 +35,7 @@ impl BaseDeserialize for SimpleScalarVariant {
         ops.push(Operation::TypeCall {
             input_var: "buffer".to_owned().into(),
             call_type: CallType::Deserialize(output_for(data).into()),
-            type_name: data.name.clone().into(),
+            type_name: self.path.clone().unwrap().into(),
             named_type: self.target.clone().unwrap(),
             arguments: arguments,
         });

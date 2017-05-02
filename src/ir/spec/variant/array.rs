@@ -59,7 +59,6 @@ impl ArrayVariant {
 
     pub fn new(count_ref: Reference, child: TypeContainer) -> TypeContainer {
         let mut data = TypeData::default();
-        data.name = TypePath::with_no_ns("array".to_owned());
 
         let child_handle = data.add_child(child.clone());
         let count_reference_handle = data.add_reference(

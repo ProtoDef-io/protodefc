@@ -49,6 +49,7 @@ pub trait TypeVariant: Debug + Any {
 }
 
 pub enum CompilePass<'a> {
+    AssignNamespace(&'a TypePath),
     ResolveReferencedTypes(&'a TypePath, &'a CompilationUnit),
     MakeTypeSpecs,
     GenerateFieldAccessOrder,

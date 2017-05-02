@@ -2,7 +2,7 @@ use ::ir::spec::TypeContainer;
 
 use ::json::JsonValue;
 use self::variants::{ScalarReader, ContainerReader, ArrayReader, UnionReader};
-use ::ir::compilation_unit::TypePath;
+use ::ir::compilation_unit::{TypePath, RelativeNSPath};
 
 mod variants;
 
@@ -20,7 +20,7 @@ fn type_from_json(json: &JsonValue) -> Result<TypeContainer> {
     let json_type = json["type_name"].as_str()
         .ok_or("expected \"type_name\" key to be string")?;
     let ident = ::frontend::protocol_spec::ast::parser::parse_ident(
-        json_type)?.to_type_path();
+        json_type)?;
 
     match json_type {
         "container" => ContainerReader::from_json(ident, json),
@@ -31,7 +31,7 @@ fn type_from_json(json: &JsonValue) -> Result<TypeContainer> {
 }
 
 trait FromProtocolJson {
-    fn from_json(name: TypePath, arg: &JsonValue) -> Result<TypeContainer>;
+    fn from_json(name: RelativeNSPath, arg: &JsonValue) -> Result<TypeContainer>;
 }
 
 #[cfg(test)]
