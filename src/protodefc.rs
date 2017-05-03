@@ -86,15 +86,15 @@ fn run(matches: &clap::ArgMatches) -> Result<()> {
         let input_file = matches.value_of("INPUT").unwrap();
         let output_file = matches.value_of("OUTPUT").unwrap();
 
-        let mut input_file = open_input(input_file);
-        let mut output_file = open_output(output_file);
+        let mut input = open_input(input_file);
+        let mut output = open_output(output_file);
 
         let mut input_str = String::new();
-        input_file.read_to_string(&mut input_str).unwrap();
+        input.read_to_string(&mut input_str).unwrap();
 
         let cu = protodefc::spec_to_final_compilation_unit(&input_str)?;
 
-        output_file.write(backend(&cu)?.as_bytes()).unwrap();
+        output.write(backend(&cu)?.as_bytes()).unwrap();
     }
 
     if let Some(ref matches) = matches.subcommand_matches("old_protodef_to_pds") {
@@ -116,35 +116,20 @@ fn run(matches: &clap::ArgMatches) -> Result<()> {
     Ok(())
 }
 
-fn open_input(name: &str) -> File {
-    #[cfg(any(unix))]
-    {
-        use std::os::unix::io::FromRawFd;
-        if (name == "-") {
-            // NOTE: This is unsafe because File expects that it
-            // is the sole user of this descriptor. Any access to
-            // standard input in other locations could cause issues
-            return unsafe { File::from_raw_fd(0) }
-        }
+fn open_input(name: &str) -> Box<Read> {
+    if (name == "-") {
+        return Box::new(std::io::stdin())
     }
 
-    File::open(name).unwrap()
+    Box::new(File::open(name).unwrap())
 }
 
-fn open_output(name: &str) -> File {
-    #[cfg(any(unix))]
-    {
-        use std::os::unix::io::FromRawFd;
-        if (name == "-") {
-            // NOTE: This is unsafe because File expects that it
-            // is the sole user of this descriptor. Any access to
-            // standard output in other locations (like println!)
-            // cause issues
-            return unsafe { File::from_raw_fd(1) }
-        }
+fn open_output(name: &str) -> Box<Write> {
+    if (name == "-") {
+        return Box::new(std::io::stdout())
     }
 
-    File::create(name).unwrap()
+    Box::new(File::create(name).unwrap())
 }
 
 impl Into<Backend> for CompileTarget {
