@@ -79,6 +79,7 @@ fn spec_to_json(typ: &TypeContainer) -> Result<Value> {
         Variant::Array(ref variant) => {
             Ok(json!({
                 "kind": "array",
+                "spec": spec_to_json(&variant.child.upgrade())?,
             }))
         }
         Variant::SimpleScalar(ref variant) => {
