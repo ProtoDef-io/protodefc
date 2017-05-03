@@ -27,7 +27,8 @@ fn format_error(input: &str, error: pds::ParseError) -> String {
     let pointer_padding = (0..error.column+1).map(|_| " ").join("");
     let pointer = "^";
 
-    println!("{:?}", error);
+    use std::io::{Write, stderr};
+    writeln!(&mut stderr(), "{:?}", error).unwrap();
     format!("{}\n{}{}", lines_f, pointer_padding, pointer)
 }
 
