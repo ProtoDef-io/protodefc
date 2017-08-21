@@ -76,7 +76,7 @@ pub fn generate_compilation_unit(cu: &CompilationUnit) -> Result<Block> {
     for typ in types {
         let typ_inner = typ.borrow();
 
-        let typ_base_name = format!("type_{}", typ_inner.type_id);
+        let typ_base_name = typ_inner.path.to_delimited_string("_".to_string(), "__".to_string());
         let typ_name_size_of = format!("{}_size_of", typ_base_name);
         let typ_name_serialize = format!("{}_serialize", typ_base_name);
         let typ_name_deserialize = format!("{}_deserialize", typ_base_name);

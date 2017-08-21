@@ -58,6 +58,17 @@ impl TypePath {
         }
     }
 
+    pub fn to_delimited_string(&self, ns_delimiter: String, name_delimiter: String) -> String {
+        let mut string = "".to_string();
+        for element in self.path.0.clone() {
+            string = format!("{}{}{}", string, ns_delimiter, element);
+        }
+        if string.len() > 0 {
+            string = string[1..].to_string();
+        }
+        format!("{}{}{}", string, name_delimiter, self.name)
+    }
+
 }
 
 impl CanonicalNSPath {
@@ -81,7 +92,6 @@ impl CanonicalNSPath {
     pub fn from_absolute_path(path: Vec<String>) -> CanonicalNSPath {
         CanonicalNSPath(path)
     }
-
 }
 
 impl RelativeNSPath {
