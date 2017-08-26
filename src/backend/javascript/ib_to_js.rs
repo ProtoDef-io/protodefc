@@ -11,7 +11,7 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
     for operation in &block.0 {
         match *operation {
             ib::Operation::ThrowError =>
-                b.expr(format!("throw new Error(\"Protodef error\")").into()),
+                b.expr(format!("throw new Error(\"protodef error\")").into()),
             ib::Operation::Declare { .. } => (),
             ib::Operation::Assign { ref output_var, ref value, .. } =>
                 b.var_assign(output_var.string(), build_expr(value)?.into()),
