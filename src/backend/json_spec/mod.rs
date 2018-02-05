@@ -17,7 +17,7 @@ pub fn compile(cu: &CompilationUnit) -> Result<String> {
 fn ns_to_json(ns: &CompilationUnitNS) -> Result<Value> {
     Ok(json!({
         "path": ns_path_to_json(&ns.path)?,
-        "types": ns.types.iter()
+        "specs": ns.specs_iter()
             .map(|i| ns_type_to_json(i))
             .collect::<Result<Vec<Value>>>()?,
     }))

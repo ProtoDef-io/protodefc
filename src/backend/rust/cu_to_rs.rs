@@ -22,11 +22,11 @@ pub fn generate_compilation_unit(cu: &CompilationUnit, out: &mut String)
                                  -> Result<()> {
     let mut b = Block::new();
 
-    let types = cu.namespaces.iter().flat_map(|ns| {
-        ns.types.iter()
+    let specs = cu.namespaces.iter().flat_map(|ns| {
+        ns.specs_iter()
     });
 
-    for typ in types {
+    for typ in specs {
         let typ_inner = typ.borrow();
 
         let typ_base_name = format!("type_{}", typ_inner.type_id);

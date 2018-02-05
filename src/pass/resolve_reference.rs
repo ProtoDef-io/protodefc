@@ -1,6 +1,6 @@
 use ::ir::spec::{TypeContainer, WeakTypeContainer};
 use ::ir::type_spec::TypeSpecContainer;
-use ::ir::compilation_unit::{CompilationUnit, TypeKind};
+use ::ir::compilation_unit::{CompilationUnit, TypeKind, DefinedItemType};
 use ::ir::spec::data::{ReferencePathEntryData, ReferenceData,
                        ReferencePathEntryOperation};
 use ::ir::spec::reference::ReferenceItem;
@@ -31,8 +31,10 @@ pub fn run(cu: &CompilationUnit) -> Result<()> {
 
     cu.each_type(&mut |typ| {
         let mut parents: Vec<WeakTypeContainer> = Vec::new();
-        let named_typ_inner = typ.borrow();
-        if let TypeKind::Type(ref root_node) = named_typ_inner.typ {
+        let named_typ = match typ.item {
+            DefinedItemType::Spec(ref inner) => inner.borrow(),
+        };
+        if let TypeKind::Type(ref root_node) = named_typ.typ {
             let mut pass_data = ResolveReferenceState::default();
             pass_data.mark_changed();
             pass_data.mark_unfinished();

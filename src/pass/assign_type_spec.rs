@@ -1,11 +1,13 @@
 use ::errors::*;
 use ::ir::spec::{Type, TypeContainer, CompilePass};
-use ::ir::compilation_unit::{CompilationUnit, TypeKind};
+use ::ir::compilation_unit::{CompilationUnit, TypeKind, DefinedItemType};
 use ::ir::type_spec::TypeSpecVariant;
 
 pub fn run(cu: &CompilationUnit) -> Result<()> {
     cu.each_type(&mut |typ_container| {
-        let named_typ = typ_container.borrow();
+        let named_typ = match typ_container.item {
+            DefinedItemType::Spec(ref inner) => inner.borrow(),
+        };
 
         let type_spec_rc = named_typ.type_spec.clone();
         let mut type_spec = type_spec_rc.borrow_mut();
