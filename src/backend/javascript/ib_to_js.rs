@@ -11,7 +11,7 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
     for operation in &block.0 {
         match *operation {
             ib::Operation::ThrowError =>
-                b.expr(format!("throw \"error\"").into()),
+                b.expr(format!("throw new Error(\"protodef error\")").into()),
             ib::Operation::Declare { .. } => (),
             ib::Operation::Assign { ref output_var, ref value, .. } =>
                 b.var_assign(output_var.string(), build_expr(value)?.into()),
@@ -128,7 +128,7 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                                       ref arguments } => {
                 let named_type_inner = named_type.borrow();
 
-                let call = call_for(call_type, named_type_inner.type_id,
+                let call = call_for(call_type, format!("{}_{}", named_type_inner.type_id, named_type_inner.path.str_name()),
                                     input_var.str(), arguments);
 
                 match *call_type {
@@ -228,7 +228,7 @@ fn build_control_flow(input_var: &ib::Var, value_type: &TypeSpecContainer,
     Ok(())
 }
 
-fn call_for(typ: &ib::CallType, type_id: u64, input: &str, arguments: &[ib::Var]) -> String {
+fn call_for(typ: &ib::CallType, type_name: String, input: &str, arguments: &[ib::Var]) -> String {
     let arguments_str = if arguments.len() > 0 {
         format!(", {}", arguments.iter().join(", "))
     } else {
@@ -237,14 +237,14 @@ fn call_for(typ: &ib::CallType, type_id: u64, input: &str, arguments: &[ib::Var]
 
     match *typ {
         ib::CallType::SizeOf(_) =>
-            format!("type_{}_size_of({}{})",
-                    type_id, input, arguments_str),
+            format!("sizeOf_{}({}{})",
+                    type_name, input, arguments_str),
         ib::CallType::Serialize =>
-            format!("type_{}_serialize({}, buffer, offset{})",
-                    type_id, input, arguments_str),
+            format!("serialize_{}({}, buffer, offset{})",
+                    type_name, input, arguments_str),
         ib::CallType::Deserialize(_) =>
-            format!("type_{}_deserialize({}, offset{})",
-                    type_id, input, arguments_str),
+            format!("deserialize_{}({}, offset{})",
+                    type_name, input, arguments_str),
     }
 }
 

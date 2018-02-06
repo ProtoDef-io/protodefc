@@ -1,5 +1,6 @@
 use ::errors::*;
 use ::std::fmt;
+use ::itertools::Itertools;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CanonicalNSPath(Vec<String>);
@@ -58,6 +59,16 @@ impl TypePath {
         }
     }
 
+    pub fn str_name(&self) -> String {
+        let mut string = self.path.0.iter()
+            .join("__");
+
+        string.push_str("_");
+        string.push_str(&self.name);
+
+        string
+    }
+
 }
 
 impl CanonicalNSPath {
@@ -81,7 +92,6 @@ impl CanonicalNSPath {
     pub fn from_absolute_path(path: Vec<String>) -> CanonicalNSPath {
         CanonicalNSPath(path)
     }
-
 }
 
 impl RelativeNSPath {
