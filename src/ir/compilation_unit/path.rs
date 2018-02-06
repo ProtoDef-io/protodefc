@@ -1,5 +1,6 @@
 use ::errors::*;
 use ::std::fmt;
+use ::itertools::Itertools;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CanonicalNSPath(Vec<String>);
@@ -58,15 +59,14 @@ impl TypePath {
         }
     }
 
-    pub fn to_delimited_string(&self, ns_delimiter: String, name_delimiter: String) -> String {
-        let mut string = "".to_string();
-        for element in self.path.0.clone() {
-            string = format!("{}{}{}", string, ns_delimiter, element);
-        }
-        if string.len() > 0 {
-            string = string[1..].to_string();
-        }
-        format!("{}{}{}", string, name_delimiter, self.name)
+    pub fn str_name(&self) -> String {
+        let mut string = self.path.0.iter()
+            .join("__");
+
+        string.push_str("_");
+        string.push_str(&self.name);
+
+        string
     }
 
 }

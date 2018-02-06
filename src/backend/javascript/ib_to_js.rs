@@ -128,7 +128,7 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                                       ref arguments } => {
                 let named_type_inner = named_type.borrow();
 
-                let call = call_for(call_type, named_type_inner.path.to_delimited_string("_".to_string(), "__".to_string()),
+                let call = call_for(call_type, format!("type_{}_{}", named_type_inner.type_id, named_type_inner.path.str_name()),
                                     input_var.str(), arguments);
 
                 match *call_type {
