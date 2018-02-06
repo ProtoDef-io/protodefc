@@ -128,7 +128,7 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                                       ref arguments } => {
                 let named_type_inner = named_type.borrow();
 
-                let call = call_for(call_type, format!("type_{}_{}", named_type_inner.type_id, named_type_inner.path.str_name()),
+                let call = call_for(call_type, format!("{}_{}", named_type_inner.type_id, named_type_inner.path.str_name()),
                                     input_var.str(), arguments);
 
                 match *call_type {
@@ -237,13 +237,13 @@ fn call_for(typ: &ib::CallType, type_name: String, input: &str, arguments: &[ib:
 
     match *typ {
         ib::CallType::SizeOf(_) =>
-            format!("{}_size_of({}{})",
+            format!("sizeOf_{}({}{})",
                     type_name, input, arguments_str),
         ib::CallType::Serialize =>
-            format!("{}_serialize({}, buffer, offset{})",
+            format!("serialize_{}({}, buffer, offset{})",
                     type_name, input, arguments_str),
         ib::CallType::Deserialize(_) =>
-            format!("{}_deserialize({}, offset{})",
+            format!("deserialize_{}({}, offset{})",
                     type_name, input, arguments_str),
     }
 }
