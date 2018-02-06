@@ -67,13 +67,13 @@ pub fn generate_deserialize(fun_name: String, typ: TypeContainer) -> Result<Bloc
 pub fn generate_compilation_unit(cu: &CompilationUnit) -> Result<Block> {
     let mut b = Block::new();
 
-    let types = cu.namespaces.iter().flat_map(|ns| {
-        ns.types.iter()
+    let specs = cu.namespaces.iter().flat_map(|ns| {
+        ns.specs_iter()
     });
 
     let mut exports: Vec<(String, String)> = Vec::new();
 
-    for typ in types {
+    for typ in specs {
         let typ_inner = typ.borrow();
 
         let typ_base_name = typ_inner.path.to_delimited_string("_".to_string(), "__".to_string());

@@ -54,7 +54,9 @@ impl TypeVariant for SimpleScalarVariant {
                 Ok(())
             }
             CompilePass::ResolveReferencedTypes(ref path, ref cu) => {
-                let target_resolved = cu.resolve_type(self.path.as_ref().unwrap())?;
+                let target_resolved_cont =
+                    cu.resolve_type(self.path.as_ref().unwrap())?;
+                let target_resolved = target_resolved_cont.item.as_spec().unwrap();
 
                 {
                     let target_inner = target_resolved.borrow();
@@ -70,7 +72,7 @@ impl TypeVariant for SimpleScalarVariant {
                     }
                 }
 
-                self.target = Some(target_resolved);
+                self.target = Some(target_resolved.clone());
                 Ok(())
             }
             CompilePass::MakeTypeSpecs => {

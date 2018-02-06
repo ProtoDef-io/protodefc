@@ -1,0 +1,4 @@
+[operations]
+throw_error = ["throw \"error\";"]
+assign = ["var ", { name = "output_var" }, " = ", { name = "expr" }, ";"]
+add_count = "count = count + {var};"

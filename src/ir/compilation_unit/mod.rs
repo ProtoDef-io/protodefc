@@ -1,18 +1,19 @@
 use ::TypeContainer;
 use ::errors::*;
-use itertools::Itertools;
-use ::std::fmt;
 use ::std::collections::HashMap;
 
 use ::rc_container::{Container, WeakContainer};
 use ::ir::type_spec::TypeSpecContainer;
 use ::ir::spec::data::ReferenceAccessTime;
 
-pub type NamedTypeContainer = Container<NamedType>;
-pub type WeakNamedTypeContainer = WeakContainer<NamedType>;
-
 mod path;
 pub use self::path::{CanonicalNSPath, RelativeNSPath, TypePath};
+
+mod defined_spec;
+pub use self::defined_spec::{ NamedTypeContainer, WeakNamedTypeContainer, NamedType,
+                              TypeKind, NativeType, NamedTypeArgument };
+mod defined_type_spec;
+pub use self::defined_type_spec::{ DefinedTypeSpecContainer };
 
 #[derive(Debug)]
 pub struct CompilationUnit {
@@ -23,40 +24,28 @@ pub struct CompilationUnit {
 #[derive(Debug)]
 pub struct CompilationUnitNS {
     pub path: CanonicalNSPath,
-    pub types: Vec<NamedTypeContainer>,
+    pub defines: Vec<DefinedItem>,
+    //pub specs: Vec<NamedTypeContainer>,
+    //pub defined_type_specs: Vec<DefinedTypeSpecContainer>,
     pub exports: HashMap<String, NamedTypeContainer>,
 }
 
 #[derive(Debug)]
-pub struct NamedType {
+pub struct DefinedItem {
     pub path: TypePath,
-
-    pub typ: TypeKind,
-    pub type_spec: TypeSpecContainer,
-    pub type_id: u64,
-
-    pub arguments: Vec<NamedTypeArgument>,
-
-    pub export: Option<String>,
-
-    pub docstring: String,
+    pub item: DefinedItemType,
 }
-
-#[derive(Debug, Clone)]
-pub enum TypeKind {
-    Native(NativeType),
-    Type(TypeContainer),
+#[derive(Debug)]
+pub enum DefinedItemType {
+    Spec(NamedTypeContainer),
 }
-
-#[derive(Debug, Clone)]
-pub struct NativeType {
-    pub type_spec: TypeSpecContainer,
-}
-#[derive(Debug, Clone)]
-pub struct NamedTypeArgument {
-    pub name: String,
-    pub access_time: ReferenceAccessTime,
-    pub type_spec: TypeSpecContainer,
+impl DefinedItemType {
+    pub fn as_spec<'a>(&'a self) -> Option<&'a NamedTypeContainer> {
+        match self {
+            &DefinedItemType::Spec(ref inner) => Some(inner),
+            _ => None,
+        }
+    }
 }
 
 impl CompilationUnit {
@@ -97,10 +86,10 @@ impl CompilationUnit {
     }
 
     pub fn each_type<F>(&self, f: &mut F) -> Result<()>
-        where F: FnMut(&NamedTypeContainer) -> Result<()> {
+        where F: FnMut(&DefinedItem) -> Result<()> {
         for ns in &self.namespaces {
-            for typ in &ns.types {
-                f(typ).chain_err(|| format!("within type '{}'", typ.borrow().path))?;
+            for typ in &ns.defines {
+                f(typ).chain_err(|| format!("within type '{}'", typ.path))?;
             }
         }
         Ok(())
@@ -124,19 +113,23 @@ impl CompilationUnit {
         }
 
         self.each_type(&mut |typ| {
-            let root = {
-                typ.borrow().typ.clone()
-            };
+            match typ.item {
+                DefinedItemType::Spec(ref inner) => {
+                    let root = {
+                        inner.borrow().typ.clone()
+                    };
 
-            if let TypeKind::Type(ref container) = root {
-                traverse_type(typ, container, f)?;
-            };
-
+                    if let TypeKind::Type(ref container) = root {
+                        traverse_type(&inner, container, f)?;
+                    };
+                },
+                _ => (),
+            }
             Ok(())
         })
     }
 
-    pub fn resolve_type(&self, path: &TypePath) -> Result<NamedTypeContainer> {
+    pub fn resolve_type<'a>(&'a self, path: &TypePath) -> Result<&'a DefinedItem> {
         self.namespaces.iter()
             .find(|ns| ns.path == path.path)
             .ok_or_else(|| format!("no type '{}' in compilation unit", path).into())
@@ -150,17 +143,18 @@ impl CompilationUnitNS {
     pub fn new(path: CanonicalNSPath) -> CompilationUnitNS {
         CompilationUnitNS {
             path: path,
-            types: Vec::new(),
+            defines: Vec::new(),
             exports: HashMap::new(),
         }
     }
 
     pub fn add_type(&mut self, typ: NamedType) -> Result<()> {
-        if let Some(_) = self.types.iter().find(|t| t.borrow().path == typ.path) {
+        if let Some(_) = self.defines.iter().find(|t| t.path == typ.path) {
             bail!("duplicate named type '{:?}'",
                   typ.path);
         }
 
+        let path = typ.path.clone();
         let export = typ.export.clone();
         let container = NamedTypeContainer::new(typ);
 
@@ -170,26 +164,37 @@ impl CompilationUnitNS {
             self.exports.insert(name, container.clone());
         }
 
-        self.types.push(container);
+        self.defines.push(DefinedItem {
+            path: path,
+            item: DefinedItemType::Spec(container),
+        });
         Ok(())
     }
 
     fn get_type_id(&self, path: &TypePath) -> Result<u64> {
-        self.types.iter()
-            .find(|typ| &typ.borrow().path == path)
-            .map(|typ| typ.borrow().type_id)
+        self.defines.iter()
+            .find(|typ| &typ.path == path)
+            .map(|typ| match typ.item {
+                DefinedItemType::Spec(ref i) => i.borrow().type_id,
+                _ => panic!(),
+            })
             .ok_or_else(|| {
                 format!("type '{}' not found", path).into()
             })
     }
 
-    fn resolve_type(&self, path: &TypePath) -> Result<NamedTypeContainer> {
-        self.types.iter()
-            .find(|typ| &typ.borrow().path == path)
+    fn resolve_type<'a>(&'a self, path: &TypePath) -> Result<&'a DefinedItem> {
+        self.defines.iter()
+            .find(|typ| &typ.path == path)
             .ok_or(format!("type '{}' not found", path).into())
             .map(|t| t.clone())
     }
 
+    pub fn specs_iter<'a>(&'a self) -> Box<Iterator<Item = &'a NamedTypeContainer> + 'a> {
+        Box::new(
+            self.defines.iter().flat_map(|item| item.item.as_spec())
+        )
+    }
 }
 
 impl TypeKind {

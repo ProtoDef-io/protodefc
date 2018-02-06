@@ -68,7 +68,7 @@ pub fn generate_compilation_unit(cu: &CompilationUnit) -> Result<Block> {
     let mut b = Block::new();
 
     let types = cu.namespaces.iter().flat_map(|ns| {
-        ns.types.iter()
+        ns.specs_iter()
     });
 
     let mut exports: Vec<(String, String)> = Vec::new();
