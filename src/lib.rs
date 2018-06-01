@@ -5,10 +5,8 @@
 extern crate json;
 #[macro_use] extern crate serde_json;
 #[macro_use] extern crate nom;
-extern crate rustache;
 extern crate itertools;
 #[macro_use] extern crate matches;
-extern crate regex;
 extern crate inflector;
 extern crate num_bigint;
 
