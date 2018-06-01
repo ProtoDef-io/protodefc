@@ -1,4 +1,3 @@
-use ::regex::Regex;
 use ::std::marker::PhantomData;
 use ::errors::*;
 use ::inflector::cases;
@@ -34,12 +33,17 @@ pub fn is_name_char(c: char) -> bool {
 impl Name {
 
     pub fn new(string: String) -> Result<Name> {
-        lazy_static! {
-            static ref RE: ::regex::Regex =
-                Regex::new(r"^[a-z][a-zA-Z0-9_]*$").unwrap();
+        {
+            let mut chars = string.chars();
+            let valid = chars.next().into_iter().all(|c| c.is_ascii_lowercase())
+                        && chars.all(|c| c.is_digit(10)
+                                    || c == '_'
+                                    || c.is_ascii_alphabetic());
+
+            ensure!(valid,
+                    "name is not valid, got {:?}", string);
         }
-        ensure!(RE.is_match(&string),
-                "name is not valid, got {:?}", string);
+
         ensure!(cases::snakecase::is_snake_case(&string),
                 "name must be snake_cased, got {:?}", string);
 
