@@ -125,7 +125,7 @@ pub fn generate_compilation_unit(cu: &CompilationUnit) -> Result<Block> {
                     ns_path, i = internal_name)
         })
         .join(",\n");
-    b.assign("module.exports".into(), format!("{{\n{}\n}}", exports_inner).into());
+    b.var_assign("exports".into(), format!("{{\n{}\n}}", exports_inner).into());
 
     Ok(b)
 }
