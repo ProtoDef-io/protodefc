@@ -53,7 +53,7 @@ pub fn generate_deserialize(fun_name: String, typ: TypeContainer) -> Result<Bloc
     let mut ib = Block::new();
 
     ib.scope(super::ib_to_js::build_block(&base)?);
-    ib.return_(format!("[{}, offset]",
+    ib.return_(format!("{{ value: {}, size: offset }}",
                        ib::utils::output_for_type(&typ.clone())).into());
 
     let mut b = Block::new();
@@ -76,7 +76,7 @@ pub fn generate_compilation_unit(cu: &CompilationUnit) -> Result<Block> {
 
     for typ in specs {
         let typ_inner = typ.borrow();
-        
+
         let typ_base_name = format!("{}_{}", typ_inner.type_id, typ_inner.path.str_name());
         let typ_name_size_of = format!("sizeOf_{}", typ_base_name);
         let typ_name_serialize = format!("serialize_{}", typ_base_name);
@@ -105,7 +105,7 @@ pub fn generate_compilation_unit(cu: &CompilationUnit) -> Result<Block> {
             TypeKind::Native(_) => {
                 b.var_assign(
                     typ_name_size_of.clone(),
-                    format!("types[\"{}\"][\"size_of\"]", typ_ns_name).into()
+                    format!("types[\"{}\"][\"sizeOf\"]", typ_ns_name).into()
                 );
                 b.var_assign(
                     typ_name_serialize.clone(),
@@ -121,7 +121,7 @@ pub fn generate_compilation_unit(cu: &CompilationUnit) -> Result<Block> {
 
     let exports_inner = exports.iter()
         .map(|&(ref ns_path, ref internal_name)| {
-            format!("\"{}\": {{\"size_of\": {i}_size_of, \"serialize\": {i}_serialize, \"deserialize\": {i}_deserialize }}",
+            format!("\"{}\": {{\"sizeOf\": sizeOf_{i}, \"serialize\": serialize_{i}, \"deserialize\": deserialize_{i} }}",
                     ns_path, i = internal_name)
         })
         .join(",\n");

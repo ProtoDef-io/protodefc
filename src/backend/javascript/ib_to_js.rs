@@ -140,8 +140,8 @@ pub fn build_block(block: &ib::Block) -> Result<Block> {
                     }
                     ib::CallType::Deserialize(ref output) => {
                         b.var_assign(format!("call_out"), call.into());
-                        b.var_assign(format!("{}", output), format!("call_out[0]").into());
-                        b.var_assign(format!("offset"), format!("call_out[1]").into())
+                        b.var_assign(format!("{}", output), format!("call_out.value").into());
+                        b.var_assign(format!("offset"), format!("call_out.size").into())
                     }
                 }
             }
