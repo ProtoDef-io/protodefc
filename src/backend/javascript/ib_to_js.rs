@@ -4,6 +4,7 @@ use ::ir::type_spec::literal::{TypeSpecLiteral, TypeSpecLiteralVariant};
 use ::backend::imperative_base as ib;
 use ::errors::*;
 use itertools::Itertools;
+use inflector::cases::camelcase::to_camel_case;
 
 pub fn build_block(block: &ib::Block) -> Result<Block> {
     let mut b = Block::new();
@@ -255,7 +256,7 @@ fn build_expr(expr: &ib::Expr) -> Result<Expr> {
         ib::Expr::Literal(ib::Literal::Number(ref num)) =>
             num.clone(),
         ib::Expr::ContainerField { ref input_var, ref field } =>
-            format!("{}[\"{}\"]", input_var, field.snake()),
+            format!("{}[\"{}\"]", input_var, field.camel()),
         ib::Expr::ArrayLength(ref array) =>
             format!("{}.length", array),
         ib::Expr::BinarySize(ref binary, _) =>
